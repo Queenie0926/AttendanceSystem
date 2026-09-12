@@ -1,0 +1,170 @@
+﻿<Window x:Class="Attendance_System.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Attendance_System"
+        mc:Ignorable="d"
+        Title="Staff Attendance System" Height="650" Width="1000"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="SidebarBrush" Color="#FFCF0A2C"/>
+        <SolidColorBrush x:Key="SidebarHoverBrush" Color="#FFA80823"/>
+        <SolidColorBrush x:Key="SidebarActiveBrush" Color="#FF8C0A20"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#FFCF0A2C"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#F5F6F8"/>
+        <SolidColorBrush x:Key="GoldBrush" Color="#FFD4AF37"/>
+
+        <!-- Nav button: icon column (fixed) + label column (collapsible) + left accent indicator -->
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource SidebarHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Toggle (hamburger) button -->
+        <Style x:Key="ToggleButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="20">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#22FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource BackgroundBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar (width is animated in code-behind) -->
+        <Border x:Name="SidebarBorder" Grid.Column="0" Width="220" Background="#FF6F0416">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.25" BlurRadius="16" ShadowDepth="0"/>
+            </Border.Effect>
+            <DockPanel LastChildFill="True">
+
+                <!-- Top bar: hamburger toggle -->
+                <Grid DockPanel.Dock="Top" Height="56" Margin="8,4,8,0">
+                    <Button x:Name="BtnToggleNav" Content="☰" Style="{StaticResource ToggleButtonStyle}"
+                            HorizontalAlignment="Left" Click="ToggleNav_Click"/>
+                </Grid>
+
+                <!-- Logo + title (fades out when collapsed) -->
+                <StackPanel x:Name="LogoPanel" DockPanel.Dock="Top" Margin="0,8,0,20" HorizontalAlignment="Center">
+                    <Border Width="84" Height="84" CornerRadius="42" Background="White"
+                            BorderBrush="{StaticResource GoldBrush}" BorderThickness="2">
+                        <Image Source="/Assets/um_logo1.png" Width="72" Height="72" Stretch="Uniform"/>
+                    </Border>
+                    <TextBlock x:Name="TxtSchoolName" Text="University of Mindanao" Foreground="White" FontSize="13" FontWeight="Bold"
+                               Margin="0,12,0,0" TextAlignment="Center" TextWrapping="Wrap" Width="180"/>
+                    <TextBlock x:Name="TxtAppName" Text="RFID + PIN Attendance" Foreground="{StaticResource GoldBrush}" FontSize="11"
+                               Margin="0,2,0,0" TextAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Top">
+                    <Separator Background="#33FFFFFF" Margin="16,0,16,12"/>
+
+                    <Button x:Name="BtnEnrollment" Style="{StaticResource NavButtonStyle}" Click="NavButton_Click" Tag="Enrollment">
+                        <Grid HorizontalAlignment="Stretch">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="IndEnrollment" Grid.Column="0" Background="{StaticResource GoldBrush}" Visibility="Visible"/>
+                            <TextBlock Grid.Column="1" Text="🧑" FontSize="16" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="LblEnrollment" Grid.Column="2" Text="Enrollment" VerticalAlignment="Center" FontSize="14"/>
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="BtnLogs" Style="{StaticResource NavButtonStyle}" Click="NavButton_Click" Tag="Logs">
+                        <Grid HorizontalAlignment="Stretch">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="IndLogs" Grid.Column="0" Background="{StaticResource GoldBrush}" Visibility="Collapsed"/>
+                            <TextBlock Grid.Column="1" Text="📋" FontSize="16" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="LblLogs" Grid.Column="2" Text="Attendance Logs" VerticalAlignment="Center" FontSize="14"/>
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="BtnReports" Style="{StaticResource NavButtonStyle}" Click="NavButton_Click" Tag="Reports">
+                        <Grid HorizontalAlignment="Stretch">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="IndReports" Grid.Column="0" Background="{StaticResource GoldBrush}" Visibility="Collapsed"/>
+                            <TextBlock Grid.Column="1" Text="📄" FontSize="16" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="LblReports" Grid.Column="2" Text="DTR Reports" VerticalAlignment="Center" FontSize="14"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+
+                <Grid/>
+                <!-- spacer to satisfy DockPanel LastChildFill -->
+            </DockPanel>
+        </Border>
+
+        <!-- Main content area -->
+        <Grid Grid.Column="1" Margin="24">
+            <ContentControl x:Name="MainContent"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,61 @@
+﻿<UserControl x:Class="Attendance_System.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <Border Width="4" Height="26" Background="#FFCF0A2C" CornerRadius="2" Margin="0,0,10,0"/>
+            <TextBlock Text="Daily Time Record (DTR) Reports" Style="{StaticResource SectionTitleStyle}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="20" Margin="0,0,0,18">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1.4*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="FROM" Style="{StaticResource FieldLabelStyle}"/>
+                        <DatePicker x:Name="DateFrom" Style="{StaticResource ModernDatePickerStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="TO" Style="{StaticResource FieldLabelStyle}"/>
+                        <DatePicker x:Name="DateTo" Style="{StaticResource ModernDatePickerStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="STAFF (OPTIONAL)" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtStaffFilter" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                    <Button Content="Export to CSV" Style="{StaticResource SecondaryButtonStyle}" Width="130" Margin="0,0,10,0" Click="ExportButton_Click"/>
+                    <Button Content="Generate DTR" Style="{StaticResource PrimaryButtonStyle}" Width="130" Click="GenerateButton_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="22,18,22,8">
+            <DataGrid x:Name="DtrGrid" Style="{StaticResource ModernDataGridStyle}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="STAFF NAME" Binding="{Binding StaffName}" Width="2*"/>
+                    <DataGridTextColumn Header="DATE" Binding="{Binding DateDisplay}" Width="1.2*"/>
+                    <DataGridTextColumn Header="TIME IN" Binding="{Binding TimeIn}" Width="1*"/>
+                    <DataGridTextColumn Header="TIME OUT" Binding="{Binding TimeOut}" Width="1*"/>
+                    <DataGridTextColumn Header="HOURS WORKED" Binding="{Binding HoursWorked}" Width="1.2*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</UserControl>

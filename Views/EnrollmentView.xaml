@@ -1,0 +1,67 @@
+﻿<UserControl x:Class="Attendance_System.Views.EnrollmentView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <Border Width="4" Height="26" Background="#FFCF0A2C" CornerRadius="2" Margin="0,0,10,0"/>
+            <TextBlock Text="Staff Enrollment" Style="{StaticResource SectionTitleStyle}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,20">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="FULL NAME" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="POSITION / DEPARTMENT" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtPosition" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,4"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="RFID UID (TAP CARD OR TYPE)" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtRfidUid" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="PIN (4-6 DIGITS)" Style="{StaticResource FieldLabelStyle}"/>
+                        <PasswordBox x:Name="TxtPin" Style="{StaticResource ModernPasswordBoxStyle}" Margin="0,0,0,4"/>
+                    </StackPanel>
+                </Grid>
+
+                <Separator Background="#F0F1F3" Margin="0,20,0,16"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="0,0,14,0" Foreground="#6B7280" FontSize="12"/>
+                    <Button Content="Enroll Staff" Style="{StaticResource PrimaryButtonStyle}" Click="EnrollButton_Click" Width="140"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="22,18,22,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14">
+                    <TextBlock Text="Enrolled Staff" FontWeight="Bold" FontSize="15" Foreground="#1F2937"/>
+                </StackPanel>
+                <DataGrid x:Name="StaffGrid" Style="{StaticResource ModernDataGridStyle}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="NAME" Binding="{Binding Name}" Width="2*"/>
+                        <DataGridTextColumn Header="POSITION" Binding="{Binding Position}" Width="2*"/>
+                        <DataGridTextColumn Header="RFID UID" Binding="{Binding RfidUid}" Width="1.5*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>
