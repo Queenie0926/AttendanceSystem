@@ -1,0 +1,47 @@
+<Window x:Class="Attendance_System.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sign In — Staff Attendance System" Height="460" Width="380"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Background="#F5F6F8">
+
+    <Grid Margin="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Width="72" Height="72" CornerRadius="36" Background="White"
+                BorderBrush="#FFD4AF37" BorderThickness="2" HorizontalAlignment="Center">
+            <Image Source="/Assets/um_logo1.png" Width="60" Height="60" Stretch="Uniform"/>
+        </Border>
+
+        <TextBlock Grid.Row="1" Text="Admin Sign In" FontSize="18" FontWeight="Bold"
+                   HorizontalAlignment="Center" Margin="0,16,0,4" Foreground="#1F2937"/>
+        <TextBlock Grid.Row="2" Text="RFID + OTP Attendance System" FontSize="12"
+                   HorizontalAlignment="Center" Margin="0,0,0,24" Foreground="#6B7280"/>
+
+        <StackPanel Grid.Row="3" Margin="0,0,0,14">
+            <TextBlock Text="EMAIL" FontSize="11" FontWeight="Bold" Foreground="#6B7280" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtEmail" Padding="10,8" FontSize="13" BorderBrush="#D1D5DB"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Margin="0,0,0,8">
+            <TextBlock Text="PASSWORD" FontSize="11" FontWeight="Bold" Foreground="#6B7280" Margin="0,0,0,4"/>
+            <PasswordBox x:Name="TxtPassword" Padding="10,8" FontSize="13" BorderBrush="#D1D5DB"
+                         KeyDown="TxtPassword_KeyDown"/>
+        </StackPanel>
+
+        <TextBlock x:Name="StatusText" Grid.Row="5" Foreground="#DC2626" FontSize="12"
+                   TextWrapping="Wrap" Margin="0,4,0,10"/>
+
+        <Button x:Name="BtnLogin" Grid.Row="6" Content="Sign In" Height="40" FontSize="14"
+                Background="#FFCF0A2C" Foreground="White" BorderThickness="0" Cursor="Hand"
+                Click="BtnLogin_Click"/>
+    </Grid>
+</Window>

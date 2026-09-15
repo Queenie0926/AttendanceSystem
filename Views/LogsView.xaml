@@ -60,7 +60,7 @@
                     <DataGridTextColumn Header="STAFF NAME" Binding="{Binding StaffName}" Width="2*"/>
                     <DataGridTextColumn Header="DATE" Binding="{Binding DateDisplay}" Width="1.2*"/>
                     <DataGridTextColumn Header="TIME" Binding="{Binding TimeDisplay}" Width="1.2*"/>
-                    <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="1*"/>
+                    <DataGridTextColumn Header="STATUS" Binding="{Binding StatusDisplay}" Width="1*"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

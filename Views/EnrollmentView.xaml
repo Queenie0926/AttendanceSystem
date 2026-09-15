@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Attendance_System.Views.EnrollmentView"
+<UserControl x:Class="Attendance_System.Views.EnrollmentView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -21,22 +21,39 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="20"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="FULL NAME" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
+                        <TextBlock Text="FIRST NAME" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtFirstName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
 
-                        <TextBlock Text="POSITION / DEPARTMENT" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtPosition" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,4"/>
+                        <TextBlock Text="MIDDLE NAME (OPTIONAL)" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtMiddleName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="LAST NAME" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtLastName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,4"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="RFID UID (TAP CARD OR TYPE)" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtRfidUid" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
+                        <TextBlock Text="EMAIL (FOR OTP DELIVERY)" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtEmail" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
 
-                        <TextBlock Text="PIN (4-6 DIGITS)" Style="{StaticResource FieldLabelStyle}"/>
-                        <PasswordBox x:Name="TxtPin" Style="{StaticResource ModernPasswordBoxStyle}" Margin="0,0,0,4"/>
+                        <TextBlock Text="RFID UID" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtRfidUid" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,4"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Text="DEPARTMENT" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbDepartment" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,0,16"
+                                  SelectionChanged="CmbDepartment_SelectionChanged"/>
+
+                        <TextBlock Text="PROGRAM" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbProgram" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="POSITION" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbPosition" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,0,4"/>
                     </StackPanel>
                 </Grid>
 
@@ -56,9 +73,11 @@
                 </StackPanel>
                 <DataGrid x:Name="StaffGrid" Style="{StaticResource ModernDataGridStyle}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="NAME" Binding="{Binding Name}" Width="2*"/>
-                        <DataGridTextColumn Header="POSITION" Binding="{Binding Position}" Width="2*"/>
-                        <DataGridTextColumn Header="RFID UID" Binding="{Binding RfidUid}" Width="1.5*"/>
+                        <DataGridTextColumn Header="NAME" Binding="{Binding FullName}" Width="1.6*"/>
+                        <DataGridTextColumn Header="PROGRAM" Binding="{Binding Program}" Width="1.8*"/>
+                        <DataGridTextColumn Header="POSITION" Binding="{Binding PositionRole}" Width="1.2*"/>
+                        <DataGridTextColumn Header="EMAIL" Binding="{Binding Email}" Width="1.8*"/>
+                        <DataGridTextColumn Header="RFID UID" Binding="{Binding RfidUid}" Width="1*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel>

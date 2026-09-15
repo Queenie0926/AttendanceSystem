@@ -1,28 +1,15 @@
-﻿using Attendance_System.Models;
+using Attendance_System.Models;
+using Attendance_System.Services;
 using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Attendance_System.Views
 {
     public partial class ReportsView : UserControl
     {
-        private readonly List<AttendanceRecord> _allLogs = new()
-        {
-            new AttendanceRecord { StaffName = "Juan Dela Cruz", Date = DateTime.Today, Time = new TimeSpan(8, 2, 0), Status = "Time In" },
-            new AttendanceRecord { StaffName = "Juan Dela Cruz", Date = DateTime.Today, Time = new TimeSpan(17, 5, 0), Status = "Time Out" },
-            new AttendanceRecord { StaffName = "Maria Santos", Date = DateTime.Today, Time = new TimeSpan(8, 15, 0), Status = "Time In" },
-            new AttendanceRecord { StaffName = "Maria Santos", Date = DateTime.Today, Time = new TimeSpan(17, 30, 0), Status = "Time Out" },
-            new AttendanceRecord { StaffName = "Juan Dela Cruz", Date = DateTime.Today.AddDays(-1), Time = new TimeSpan(8, 0, 0), Status = "Time In" },
-            new AttendanceRecord { StaffName = "Juan Dela Cruz", Date = DateTime.Today.AddDays(-1), Time = new TimeSpan(17, 10, 0), Status = "Time Out" },
-        };
-
         private List<DtrEntry> _currentReport = new();
 
         public ReportsView()
@@ -32,7 +19,7 @@ namespace Attendance_System.Views
             DateTo.SelectedDate = DateTime.Today;
         }
 
-        private void GenerateButton_Click(object sender, RoutedEventArgs e)
+        private async void GenerateButton_Click(object sender, RoutedEventArgs e)
         {
             if (DateFrom.SelectedDate is null || DateTo.SelectedDate is null)
             {
@@ -45,13 +32,20 @@ namespace Attendance_System.Views
             var to = DateTo.SelectedDate.Value.Date;
             string staffFilter = TxtStaffFilter.Text.Trim();
 
-            var logs = _allLogs.Where(log =>
-                log.Date.Date >= from && log.Date.Date <= to &&
-                (string.IsNullOrEmpty(staffFilter) || log.StaffName.Contains(staffFilter, StringComparison.OrdinalIgnoreCase))
-            );
+            List<AttendanceRecord> logs;
+            try
+            {
+                logs = await SupabaseService.Instance.GetAttendanceEventsAsync(from, to, staffFilter);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load attendance data:\n{ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             var grouped = new Dictionary<(string, DateTime), DtrEntry>();
-            foreach (var log in logs)
+            foreach (var log in logs.OrderBy(l => l.Date).ThenBy(l => l.Time))
             {
                 var key = (log.StaffName, log.Date.Date);
                 if (!grouped.TryGetValue(key, out var entry))
@@ -61,9 +55,14 @@ namespace Attendance_System.Views
                 }
 
                 if (log.Status == "Time In" && entry.TimeIn == "--")
+                {
                     entry.TimeIn = DateTime.Today.Add(log.Time).ToString("hh:mm tt");
+                    entry.IsLate = log.IsLate;
+                }
                 else if (log.Status == "Time Out")
+                {
                     entry.TimeOut = DateTime.Today.Add(log.Time).ToString("hh:mm tt");
+                }
             }
 
             foreach (var entry in grouped.Values)
@@ -103,9 +102,9 @@ namespace Attendance_System.Views
             if (dialog.ShowDialog() != true) return;
 
             var sb = new StringBuilder();
-            sb.AppendLine("Staff Name,Date,Time In,Time Out,Hours Worked");
+            sb.AppendLine("Staff Name,Date,Time In,Time Out,Hours Worked,Remarks");
             foreach (var row in _currentReport)
-                sb.AppendLine($"{row.StaffName},{row.DateDisplay},{row.TimeIn},{row.TimeOut},{row.HoursWorked}");
+                sb.AppendLine($"{row.StaffName},{row.DateDisplay},{row.TimeIn},{row.TimeOut},{row.HoursWorked},{row.Remarks}");
 
             File.WriteAllText(dialog.FileName, sb.ToString());
             MessageBox.Show("Report exported successfully.", "Done",

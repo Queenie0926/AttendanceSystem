@@ -54,6 +54,7 @@
                     <DataGridTextColumn Header="TIME IN" Binding="{Binding TimeIn}" Width="1*"/>
                     <DataGridTextColumn Header="TIME OUT" Binding="{Binding TimeOut}" Width="1*"/>
                     <DataGridTextColumn Header="HOURS WORKED" Binding="{Binding HoursWorked}" Width="1.2*"/>
+                    <DataGridTextColumn Header="REMARKS" Binding="{Binding Remarks}" Width="1*"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

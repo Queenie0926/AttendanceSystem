@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local secrets (Supabase URL/keys) — copy appsettings.example.json instead
+appsettings.json
