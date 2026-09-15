@@ -1,6 +1,10 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Tokens.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
     <!-- ══ Typography ═══════════════════════════════════════════════════ -->
 
     <Style x:Key="PageTitleStyle" TargetType="TextBlock">
@@ -220,10 +224,11 @@
                 <ControlTemplate TargetType="Button">
                     <Grid>
                         <Border x:Name="bg" Background="{TemplateBinding Background}" Margin="8,0" CornerRadius="{StaticResource RadiusControl}"/>
-                        <Border x:Name="indicator" Width="3" HorizontalAlignment="Left" Margin="0,8"
-                                Background="{StaticResource AccentBrush}" CornerRadius="0,2,2,0"
+                        <Border x:Name="indicator" Width="3" HorizontalAlignment="Left" Margin="8,11,0,11"
+                                Background="{StaticResource AccentBrush}" CornerRadius="2"
                                 Visibility="Collapsed"/>
-                        <ContentPresenter Margin="20,0,12,0" VerticalAlignment="Center"/>
+                        <!-- 27px left keeps an 18px icon centred in the 72px collapsed rail -->
+                        <ContentPresenter Margin="27,0,12,0" VerticalAlignment="Center"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -383,7 +388,7 @@
                                             SnapsToDevicePixels="True">
                                         <Path x:Name="chevron" HorizontalAlignment="Right" VerticalAlignment="Center"
                                               Margin="0,0,12,0" Width="10" Height="6"
-                                              Stretch="Uniform" Fill="{StaticResource TextSecondaryBrush}"
+                                              Stretch="Uniform" Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                                               Data="M 0 0 L 5 5 L 10 0"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -646,6 +651,91 @@
         <Setter Property="ColumnHeaderHeight" Value="40"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+    </Style>
+
+    <!-- ══ Row actions & menus ══════════════════════════════════════════ -->
+
+    <!-- Square icon button for per-row "more actions" (⋯). -->
+    <Style x:Key="IconButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusControl}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource BorderBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource BorderBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ContextMenu">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="HasDropShadow" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderStrongBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="4" Margin="0,0,8,8" MinWidth="180">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#092122" Opacity="0.14" BlurRadius="14" ShadowDepth="2"/>
+                        </Border.Effect>
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyBase}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="5" Padding="10,8">
+                        <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{StaticResource SurfaceMutedBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Destructive menu item: red text so it's distinct, plus explicit wording. -->
+    <Style x:Key="DangerMenuItemStyle" TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+        <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+    </Style>
+
+    <Style TargetType="Separator" x:Key="MenuSeparatorStyle">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1" Background="{StaticResource BorderBrush}" Margin="4,4"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ══ Badges ═══════════════════════════════════════════════════════ -->

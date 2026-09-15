@@ -1,6 +1,7 @@
 using Attendance_System.Services;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace Attendance_System.Views
 {
@@ -15,26 +16,45 @@ namespace Attendance_System.Views
         private async Task LoadLogsAsync(
             DateTime? from = null, DateTime? to = null, string? staffFilter = null, string? statusFilter = null)
         {
+            BtnApply.IsEnabled = false;
+            LoadingText.Visibility = Visibility.Visible;
             try
             {
-                var logs = await SupabaseService.Instance.GetAttendanceEventsAsync(from, to, staffFilter, statusFilter);
-                LogsGrid.ItemsSource = logs;
+                LogsGrid.ItemsSource = await SupabaseService.Instance.GetAttendanceEventsAsync(from, to, staffFilter, statusFilter);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load attendance logs:\n{ex.Message}", "Error",
+                MessageBox.Show($"Couldn't load attendance logs:\n{ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BtnApply.IsEnabled = true;
+                LoadingText.Visibility = Visibility.Collapsed;
             }
         }
 
-        private async void FilterButton_Click(object sender, RoutedEventArgs e)
+        private async void FilterButton_Click(object sender, RoutedEventArgs e) => await ApplyFiltersAsync();
+
+        private async void TxtStaffFilter_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+                await ApplyFiltersAsync();
+        }
+
+        private async void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            DateFrom.SelectedDate = null;
+            DateTo.SelectedDate = null;
+            TxtStaffFilter.Clear();
+            CmbStatus.SelectedIndex = 0;
+            await LoadLogsAsync();
+        }
+
+        private Task ApplyFiltersAsync()
         {
             string status = (CmbStatus.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "All";
-            var from = DateFrom.SelectedDate;
-            var to = DateTo.SelectedDate;
-            string staffFilter = TxtStaffFilter.Text.Trim();
-
-            await LoadLogsAsync(from, to, staffFilter, status);
+            return LoadLogsAsync(DateFrom.SelectedDate, DateTo.SelectedDate, TxtStaffFilter.Text.Trim(), status);
         }
     }
 }

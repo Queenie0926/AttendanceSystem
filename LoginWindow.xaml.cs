@@ -30,7 +30,7 @@ namespace Attendance_System
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                StatusText.Foreground = System.Windows.Media.Brushes.Red;
+                StatusText.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush");
                 StatusText.Text = "Email and password are required.";
                 MessageBox.Show(this, "Email and password are required.", "Sign-In Failed",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -39,14 +39,14 @@ namespace Attendance_System
 
             BtnLogin.IsEnabled = false;
             StatusText.Text = "Signing in...";
-            StatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            StatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
 
             try
             {
                 var session = await SupabaseService.Instance.SignInAsync(email, password);
                 if (session?.AccessToken is null)
                 {
-                    StatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    StatusText.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush");
                     StatusText.Text = "Invalid email or password.";
                     MessageBox.Show(this, "Invalid email or password.", "Sign-In Failed",
                         MessageBoxButton.OK, MessageBoxImage.Error);
@@ -59,7 +59,7 @@ namespace Attendance_System
             catch (GotrueException)
             {
                 // Bad credentials, unconfirmed user, etc. — Supabase Auth rejected the sign-in.
-                StatusText.Foreground = System.Windows.Media.Brushes.Red;
+                StatusText.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush");
                 StatusText.Text = "Invalid email or password.";
                 MessageBox.Show(this, "Invalid email or password.", "Sign-In Failed",
                     MessageBoxButton.OK, MessageBoxImage.Error);
@@ -67,7 +67,7 @@ namespace Attendance_System
             catch (Exception ex)
             {
                 // Network/config problems shouldn't be reported as "wrong password".
-                StatusText.Foreground = System.Windows.Media.Brushes.Red;
+                StatusText.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush");
                 StatusText.Text = $"Sign-in failed: {ex.Message}";
                 MessageBox.Show(this, $"Could not sign in:\n\n{ex.Message}", "Sign-In Failed",
                     MessageBoxButton.OK, MessageBoxImage.Error);

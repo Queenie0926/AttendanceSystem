@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Staffly logo.
+          Assets/staffly_logo.png  — full 1680×1680 artwork (source)
+          Assets/staffly_mark.png  — cropped to the mark with a rounded tile (512×512)
+          Assets/staffly.ico       — same crop, 16–256px, for window/taskbar/.exe icons
+    -->
+    <BitmapImage x:Key="LogoMark" UriSource="pack://application:,,,/Assets/staffly_mark.png"
+                 DecodePixelWidth="128"/>
+
+</ResourceDictionary>

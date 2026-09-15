@@ -22,7 +22,7 @@ namespace Attendance_System.Data.Entities
         [Column("is_late")]
         public bool IsLate { get; set; }
 
-        [Column("created_at")]
+        [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
         public DateTime CreatedAt { get; set; }
     }
 }

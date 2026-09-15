@@ -11,6 +11,7 @@
         public string Program { get; set; } = "";
         public string PositionRole { get; set; } = "";
         public string RfidUid { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
 
         public string FullName =>
             string.Join(" ", new[] { FirstName, MiddleName, LastName }

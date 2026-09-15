@@ -17,6 +17,19 @@ import { formatFullName } from "../_shared/staff.ts";
 
 const MAX_FAILED_ATTEMPTS = 3; // failed verifies within the window below
 const FAILED_WINDOW_MINUTES = 10;
+const SCHOOL_TIMEZONE = "Asia/Manila";
+
+function minutesSinceMidnightIn(timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return get("hour") * 60 + get("minute");
+}
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -111,11 +124,10 @@ serve(async (req) => {
         .maybeSingle();
 
       if (settings) {
+        // shift_settings times are Philippine wall-clock times, but the edge
+        // runtime's clock is UTC — compare in the school's timezone.
         const [lh, lm] = settings.late_cutoff.split(":").map(Number);
-        const now = new Date();
-        const lateCutoff = new Date(now);
-        lateCutoff.setHours(lh, lm, 0, 0);
-        isLate = now > lateCutoff;
+        isLate = minutesSinceMidnightIn(SCHOOL_TIMEZONE) > lh * 60 + lm;
       }
     }
 

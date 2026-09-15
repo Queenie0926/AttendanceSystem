@@ -24,20 +24,30 @@ namespace Attendance_System
                 return;
             }
 
-            var login = new LoginWindow();
-            bool? signedIn = login.ShowDialog();
+            ShowLogin();
+        }
 
-            if (signedIn == true)
-            {
-                var main = new MainWindow();
-                MainWindow = main;
-                ShutdownMode = ShutdownMode.OnMainWindowClose;
-                main.Show();
-            }
-            else
+        // ShutdownMode is OnExplicitShutdown (App.xaml), so closing a window
+        // never ends the app by itself — this method decides what comes next.
+        private void ShowLogin()
+        {
+            var login = new LoginWindow();
+            if (login.ShowDialog() != true)
             {
                 Shutdown();
+                return;
             }
+
+            var main = new MainWindow();
+            MainWindow = main;
+            main.Closed += (s, args) =>
+            {
+                if (main.SignedOut)
+                    ShowLogin();
+                else
+                    Shutdown();
+            };
+            main.Show();
         }
     }
 }

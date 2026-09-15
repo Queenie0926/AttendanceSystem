@@ -9,78 +9,141 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-            <Border Width="4" Height="26" Background="#FFCF0A2C" CornerRadius="2" Margin="0,0,10,0"/>
-            <TextBlock Text="Staff Enrollment" Style="{StaticResource SectionTitleStyle}"/>
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Staff Enrollment" Style="{StaticResource PageTitleStyle}"/>
+            <TextBlock Text="Register a staff member and link their RFID card. One-time codes are sent to the email on file."
+                       Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,0" TextWrapping="Wrap"/>
         </StackPanel>
 
+        <!-- Form -->
         <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,20">
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="18"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="18"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="FIRST NAME" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtFirstName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
-
-                        <TextBlock Text="MIDDLE NAME (OPTIONAL)" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtMiddleName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
-
-                        <TextBlock Text="LAST NAME" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtLastName" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,4"/>
+                    <!-- Row 1: name -->
+                    <StackPanel Grid.Row="0" Grid.Column="0">
+                        <TextBlock Text="First name" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtFirstName" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="2">
+                        <TextBlock Style="{StaticResource FieldLabelStyle}">
+                            <Run Text="Middle name"/><Run Text="  (optional)" FontWeight="Normal" Foreground="{StaticResource TextMutedBrush}"/>
+                        </TextBlock>
+                        <TextBox x:Name="TxtMiddleName" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="0" Grid.Column="4">
+                        <TextBlock Text="Last name" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtLastName" Style="{StaticResource ModernTextBoxStyle}"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="EMAIL (FOR OTP DELIVERY)" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtEmail" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
-
+                    <!-- Row 2: credentials -->
+                    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
+                        <TextBlock Text="Email address" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TxtEmail" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.Column="4">
                         <TextBlock Text="RFID UID" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TxtRfidUid" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtRfidUid" Style="{StaticResource ModernTextBoxStyle}" FontFamily="Consolas"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="4">
-                        <TextBlock Text="DEPARTMENT" Style="{StaticResource FieldLabelStyle}"/>
-                        <ComboBox x:Name="CmbDepartment" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,0,16"
-                                  SelectionChanged="CmbDepartment_SelectionChanged"/>
-
-                        <TextBlock Text="PROGRAM" Style="{StaticResource FieldLabelStyle}"/>
-                        <ComboBox x:Name="CmbProgram" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,0,16"/>
-
-                        <TextBlock Text="POSITION" Style="{StaticResource FieldLabelStyle}"/>
-                        <ComboBox x:Name="CmbPosition" Style="{StaticResource ModernComboBoxStyle}" Margin="0,0,0,4"/>
+                    <!-- Row 3: assignment -->
+                    <StackPanel Grid.Row="4" Grid.Column="0">
+                        <TextBlock Text="Department" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbDepartment" Style="{StaticResource ModernComboBoxStyle}"
+                                  Tag="Select department" SelectionChanged="CmbDepartment_SelectionChanged"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="4" Grid.Column="2">
+                        <TextBlock Text="Program" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbProgram" Style="{StaticResource ModernComboBoxStyle}" Tag="Select program"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="4" Grid.Column="4">
+                        <TextBlock Text="Position" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbPosition" Style="{StaticResource ModernComboBoxStyle}" Tag="Select position"/>
                     </StackPanel>
                 </Grid>
 
-                <Separator Background="#F0F1F3" Margin="0,20,0,16"/>
+                <Border Style="{StaticResource SectionDividerStyle}"/>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="0,0,14,0" Foreground="#6B7280" FontSize="12"/>
-                    <Button Content="Enroll Staff" Style="{StaticResource PrimaryButtonStyle}" Click="EnrollButton_Click" Width="140"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="StatusText" Grid.Column="0" VerticalAlignment="Center"
+                               TextWrapping="Wrap" FontSize="{StaticResource FontSizeSmall}"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <Button Grid.Column="1" Content="Clear" Style="{StaticResource SubtleButtonStyle}"
+                            Margin="0,0,8,0" Click="ClearButton_Click"/>
+                    <Button x:Name="BtnEnroll" Grid.Column="2" Content="Enroll staff"
+                            Style="{StaticResource PrimaryButtonStyle}" Click="EnrollButton_Click"/>
+                </Grid>
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="22,18,22,8">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14">
-                    <TextBlock Text="Enrolled Staff" FontWeight="Bold" FontSize="15" Foreground="#1F2937"/>
+        <!-- Enrolled staff -->
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="24,18,24,14">
+                    <TextBlock Text="Enrolled staff" Style="{StaticResource SectionTitleStyle}"/>
+                    <Border Background="{StaticResource SurfaceMutedBrush}" CornerRadius="{StaticResource RadiusBadge}"
+                            Padding="7,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Items.Count, ElementName=StaffGrid}" FontSize="{StaticResource FontSizeSmall}"
+                                   FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </Border>
                 </StackPanel>
-                <DataGrid x:Name="StaffGrid" Style="{StaticResource ModernDataGridStyle}">
+
+                <DataGrid x:Name="StaffGrid" Grid.Row="1" Style="{StaticResource ModernDataGridStyle}"
+                          MouseDoubleClick="StaffGrid_MouseDoubleClick">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="NAME" Binding="{Binding FullName}" Width="1.6*"/>
                         <DataGridTextColumn Header="PROGRAM" Binding="{Binding Program}" Width="1.8*"/>
                         <DataGridTextColumn Header="POSITION" Binding="{Binding PositionRole}" Width="1.2*"/>
                         <DataGridTextColumn Header="EMAIL" Binding="{Binding Email}" Width="1.8*"/>
-                        <DataGridTextColumn Header="RFID UID" Binding="{Binding RfidUid}" Width="1*"/>
+                        <DataGridTextColumn Header="RFID UID" Binding="{Binding RfidUid}" Width="1*" FontFamily="Consolas"/>
+                        <DataGridTemplateColumn Header="" Width="56" CanUserResize="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource IconButtonStyle}" Click="RowActions_Click"
+                                            ToolTip="More actions" AutomationProperties.Name="More actions">
+                                        <!-- three horizontal dots -->
+                                        <Path Width="14" Height="4" Stretch="Uniform"
+                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              Data="M 2 0 A 2 2 0 1 0 2 4 A 2 2 0 1 0 2 0 M 8 0 A 2 2 0 1 0 8 4 A 2 2 0 1 0 8 0 M 14 0 A 2 2 0 1 0 14 4 A 2 2 0 1 0 14 0"/>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-            </DockPanel>
+
+                <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,0"
+                            Visibility="{Binding HasItems, ElementName=StaffGrid, Converter={StaticResource InverseBoolToVisibility}}">
+                    <TextBlock Text="No staff enrolled yet" Style="{StaticResource SectionTitleStyle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Staff you enroll above will appear here." Style="{StaticResource HelpTextStyle}"
+                               HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

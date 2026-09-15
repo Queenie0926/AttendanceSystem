@@ -82,6 +82,7 @@ namespace Attendance_System.Views
                 .ToList();
 
             DtrGrid.ItemsSource = _currentReport;
+            BtnExport.IsEnabled = _currentReport.Count > 0;
         }
 
         private void ExportButton_Click(object sender, RoutedEventArgs e)

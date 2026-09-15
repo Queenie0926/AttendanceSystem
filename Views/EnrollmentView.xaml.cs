@@ -3,6 +3,7 @@ using Attendance_System.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Attendance_System.Views
 {
@@ -37,18 +38,18 @@ namespace Attendance_System.Views
         {
             try
             {
-                StatusText.Text = "Loading staff...";
+                SetStatus("Loading staff…", StatusKind.Info);
                 var staff = await SupabaseService.Instance.GetStaffAsync();
 
                 _staff.Clear();
                 foreach (var s in staff)
                     _staff.Add(s);
 
-                StatusText.Text = "";
+                SetStatus("", StatusKind.Info);
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Failed to load staff: {ex.Message}";
+                SetStatus($"Couldn't load staff: {ex.Message}", StatusKind.Error);
             }
         }
 
@@ -63,38 +64,144 @@ namespace Attendance_System.Views
             string? program = CmbProgram.SelectedItem as string;
             string? position = CmbPosition.SelectedItem as string;
 
-            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName) ||
-                string.IsNullOrEmpty(email) || string.IsNullOrEmpty(uid))
+            var missing = new List<string>();
+            if (firstName.Length == 0) missing.Add("first name");
+            if (lastName.Length == 0) missing.Add("last name");
+            if (email.Length == 0) missing.Add("email");
+            if (uid.Length == 0) missing.Add("RFID UID");
+            if (department is null) missing.Add("department");
+            if (program is null) missing.Add("program");
+            if (position is null) missing.Add("position");
+
+            if (missing.Count > 0)
             {
-                StatusText.Text = "First name, last name, email, and RFID UID are required.";
+                SetStatus($"Please fill in: {string.Join(", ", missing)}.", StatusKind.Error);
                 return;
             }
 
-            if (department is null || program is null || position is null)
-            {
-                StatusText.Text = "Department, program, and position are required.";
-                return;
-            }
+            BtnEnroll.IsEnabled = false;
+            SetStatus("Enrolling…", StatusKind.Info);
 
             try
             {
                 var added = await SupabaseService.Instance.AddStaffAsync(
-                    firstName, middleName, lastName, email, department, program, position, uid);
+                    firstName, middleName, lastName, email, department!, program!, position!, uid);
                 _staff.Add(added);
 
-                StatusText.Text = $"{added.FullName} enrolled successfully.";
-                TxtFirstName.Clear();
-                TxtMiddleName.Clear();
-                TxtLastName.Clear();
-                TxtEmail.Clear();
-                TxtRfidUid.Clear();
-                CmbProgram.SelectedIndex = -1;
-                CmbPosition.SelectedIndex = -1;
+                ClearForm();
+                SetStatus($"{added.FullName} was enrolled.", StatusKind.Success);
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Enrollment failed: {ex.Message}";
+                SetStatus($"Enrollment failed: {ex.Message}", StatusKind.Error);
             }
+            finally
+            {
+                BtnEnroll.IsEnabled = true;
+            }
+        }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClearForm();
+            SetStatus("", StatusKind.Info);
+        }
+
+        private void ClearForm()
+        {
+            TxtFirstName.Clear();
+            TxtMiddleName.Clear();
+            TxtLastName.Clear();
+            TxtEmail.Clear();
+            TxtRfidUid.Clear();
+            CmbProgram.SelectedIndex = -1;
+            CmbPosition.SelectedIndex = -1;
+            TxtFirstName.Focus();
+        }
+
+        // ── Row actions ──────────────────────────────────────────────────
+
+        private void RowActions_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button { DataContext: StaffRecord staff } button) return;
+
+            var view = new MenuItem { Header = "View details" };
+            view.Click += (s, args) => ShowDetails(staff);
+
+            var edit = new MenuItem { Header = "Edit staff" };
+            edit.Click += (s, args) => EditStaff(staff);
+
+            var remove = new MenuItem { Header = "Remove staff…", Style = (Style)FindResource("DangerMenuItemStyle") };
+            remove.Click += async (s, args) => await RemoveStaffAsync(staff);
+
+            var menu = new ContextMenu
+            {
+                PlacementTarget = button,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom,
+            };
+            menu.Items.Add(view);
+            menu.Items.Add(edit);
+            menu.Items.Add(new Separator { Style = (Style)FindResource("MenuSeparatorStyle") });
+            menu.Items.Add(remove);
+            menu.IsOpen = true;
+        }
+
+        private void StaffGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // Only rows count — ignore double-clicks on the header or empty space.
+            if (e.OriginalSource is DependencyObject source &&
+                ItemsControl.ContainerFromElement(StaffGrid, source) is DataGridRow { Item: StaffRecord staff })
+                ShowDetails(staff);
+        }
+
+        private void ShowDetails(StaffRecord staff)
+        {
+            new StaffDetailsWindow(staff) { Owner = Window.GetWindow(this) }.ShowDialog();
+        }
+
+        private void EditStaff(StaffRecord staff)
+        {
+            var dialog = new StaffEditWindow(staff) { Owner = Window.GetWindow(this) };
+            if (dialog.ShowDialog() != true || dialog.Updated is null) return;
+
+            // Replace in place so the row keeps its position in the table.
+            int index = _staff.IndexOf(staff);
+            if (index >= 0) _staff[index] = dialog.Updated;
+            SetStatus($"{dialog.Updated.FullName} was updated.", StatusKind.Success);
+        }
+
+        private async Task RemoveStaffAsync(StaffRecord staff)
+        {
+            var confirm = MessageBox.Show(Window.GetWindow(this),
+                $"Remove {staff.FullName}?\n\n" +
+                "This permanently deletes their enrollment and all of their attendance records. " +
+                "Their RFID card will stop working. This can't be undone.",
+                "Remove staff", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                await SupabaseService.Instance.DeleteStaffAsync(staff.Id);
+                _staff.Remove(staff);
+                SetStatus($"{staff.FullName} was removed.", StatusKind.Success);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"Couldn't remove {staff.FullName}: {ex.Message}", StatusKind.Error);
+            }
+        }
+
+        private enum StatusKind { Info, Success, Error }
+
+        private void SetStatus(string message, StatusKind kind)
+        {
+            StatusText.Text = message;
+            StatusText.Foreground = (Brush)FindResource(kind switch
+            {
+                StatusKind.Success => "SuccessBrush",
+                StatusKind.Error => "DangerBrush",
+                _ => "TextSecondaryBrush",
+            });
         }
     }
 }

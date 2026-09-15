@@ -41,10 +41,18 @@ namespace Attendance_System.Services
             await _client.InitializeAsync();
         }
 
+        public string? CurrentUserEmail => _client?.Auth.CurrentUser?.Email;
+
         public async Task<Session?> SignInAsync(string email, string password)
         {
             var client = RequireClient();
             return await client.Auth.SignInWithPassword(email, password);
+        }
+
+        public async Task SignOutAsync()
+        {
+            var client = RequireClient();
+            await client.Auth.SignOut();
         }
 
         // ── Staff ────────────────────────────────────────────────────────
@@ -80,8 +88,53 @@ namespace Attendance_System.Services
             return ToRecord(response.Models.First());
         }
 
+        public async Task<StaffRecord> UpdateStaffAsync(
+            Guid staffId, string firstName, string? middleName, string lastName, string email,
+            string department, string program, string positionRole, string rfidUid)
+        {
+            var client = RequireClient();
+            var response = await client.From<StaffEntity>()
+                .Where(x => x.Id == staffId)
+                .Set(x => x.FirstName, firstName)
+                .Set(x => x.MiddleName!, string.IsNullOrWhiteSpace(middleName) ? null! : middleName)
+                .Set(x => x.LastName, lastName)
+                .Set(x => x.Email, email)
+                .Set(x => x.Department, department)
+                .Set(x => x.Program, program)
+                .Set(x => x.PositionRole, positionRole)
+                .Set(x => x.RfidUid, rfidUid)
+                .Update();
+
+            return ToRecord(response.Models.FirstOrDefault()
+                ?? throw new InvalidOperationException("Staff member not found — they may have been removed."));
+        }
+
+        /// <summary>
+        /// Deletes a staff member. Their attendance_events and otp_tokens rows
+        /// are removed by ON DELETE CASCADE; audit log rows keep a null staff_id.
+        /// </summary>
+        public async Task DeleteStaffAsync(Guid staffId)
+        {
+            var client = RequireClient();
+            await client.From<StaffEntity>().Where(x => x.Id == staffId).Delete();
+        }
+
+        public async Task<AttendanceRecord?> GetLastEventAsync(Guid staffId)
+        {
+            var client = RequireClient();
+            var response = await client.From<AttendanceEventEntity>()
+                .Where(x => x.StaffId == staffId)
+                .Order(x => x.EventTimestamp, Ordering.Descending)
+                .Limit(1)
+                .Get();
+
+            var last = response.Models.FirstOrDefault();
+            return last is null ? null : ToRecord(last, new Dictionary<Guid, StaffEntity>());
+        }
+
         private static StaffRecord ToRecord(StaffEntity e) => new()
         {
+            CreatedAt = e.CreatedAt.ToLocalTime(),
             Id = e.Id,
             FirstName = e.FirstName,
             MiddleName = e.MiddleName,
@@ -160,7 +213,22 @@ namespace Attendance_System.Services
                 .Where(x => x.Id == 1)
                 .Single();
 
-            return response ?? new ShiftSettingsEntity();
+            return response ?? new ShiftSettingsEntity { Id = 1 };
+        }
+
+        public async Task<ShiftSettingsEntity> UpdateShiftSettingsAsync(TimeSpan shiftStart, TimeSpan lateCutoff, TimeSpan absentCutoff)
+        {
+            var client = RequireClient();
+            var response = await client.From<ShiftSettingsEntity>()
+                .Where(x => x.Id == 1)
+                .Set(x => x.ShiftStart, shiftStart.ToString(@"hh\:mm\:ss"))
+                .Set(x => x.LateCutoff, lateCutoff.ToString(@"hh\:mm\:ss"))
+                .Set(x => x.AbsentCutoff, absentCutoff.ToString(@"hh\:mm\:ss"))
+                .Set(x => x.UpdatedAt, DateTime.UtcNow)
+                .Update();
+
+            return response.Models.FirstOrDefault()
+                ?? throw new InvalidOperationException("Shift settings row (id = 1) was not found.");
         }
     }
 }

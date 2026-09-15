@@ -1,6 +1,8 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Attendance_System.Services;
 using Attendance_System.Views;
 
 namespace Attendance_System
@@ -8,37 +10,38 @@ namespace Attendance_System
     public partial class MainWindow : Window
     {
         private bool _isSidebarExpanded = true;
-        private const double ExpandedWidth = 220;
-        private const double CollapsedWidth = 64;
+        private const double ExpandedWidth = 240;
+        private const double CollapsedWidth = 72;
+
+        /// <summary>True when the window closed because the admin signed out (App shows login again).</summary>
+        public bool SignedOut { get; private set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            MainContent.Content = new LogsView(); // default landing view
-            SetActiveIndicator(IndLogs);
+            TxtUserEmail.Text = SupabaseService.Instance.CurrentUserEmail ?? "";
+            Navigate("Logs");
         }
 
         private void ToggleNav_Click(object sender, RoutedEventArgs e)
         {
-            double targetWidth = _isSidebarExpanded ? CollapsedWidth : ExpandedWidth;
             _isSidebarExpanded = !_isSidebarExpanded;
 
             var animation = new DoubleAnimation
             {
-                To = targetWidth,
-                Duration = new Duration(System.TimeSpan.FromMilliseconds(220)),
+                To = _isSidebarExpanded ? ExpandedWidth : CollapsedWidth,
+                Duration = new Duration(TimeSpan.FromMilliseconds(200)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
             };
 
-            // Fade labels out immediately when collapsing; fade back in after expansion finishes.
+            // Hide labels immediately when collapsing; restore after expanding.
             if (!_isSidebarExpanded)
-            {
                 SetLabelsVisible(false);
-            }
             else
-            {
                 animation.Completed += (s, args) => SetLabelsVisible(true);
-            }
+
+            // Chevron points left to collapse, right to expand.
+            ToggleGlyph.Data = Geometry.Parse(_isSidebarExpanded ? "M 10 3 L 5 8 L 10 13" : "M 6 3 L 11 8 L 6 13");
 
             SidebarBorder.BeginAnimation(WidthProperty, animation);
         }
@@ -49,40 +52,53 @@ namespace Attendance_System
             LblEnrollment.Visibility = visibility;
             LblLogs.Visibility = visibility;
             LblReports.Visibility = visibility;
-
-            // Logo and school name/app name hide together with the labels —
-            // only icons remain when the sidebar is collapsed.
-            LogoPanel.Visibility = visibility;
+            LblShift.Visibility = visibility;
+            AccountText.Visibility = visibility;
+            BrandText.Visibility = visibility;
+            NavHeading.Visibility = visibility;
         }
 
         private void NavButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender != Button.MouseDoubleClickEvent && sender is Button clicked)
-            {
-                switch (clicked.Tag as string)
-                {
-                    case "Enrollment":
-                        MainContent.Content = new EnrollmentView();
-                        SetActiveIndicator(IndEnrollment);
-                        break;
-                    case "Logs":
-                        MainContent.Content = new LogsView();
-                        SetActiveIndicator(IndLogs);
-                        break;
-                    case "Reports":
-                        MainContent.Content = new ReportsView();
-                        SetActiveIndicator(IndReports);
-                        break;
-                }
-            }
+            if (sender is Button { CommandParameter: string target })
+                Navigate(target);
         }
 
-        private void SetActiveIndicator(Border active)
+        private void Navigate(string target)
         {
-            IndEnrollment.Visibility = Visibility.Collapsed;
-            IndLogs.Visibility = Visibility.Collapsed;
-            IndReports.Visibility = Visibility.Collapsed;
-            active.Visibility = Visibility.Visible;
+            MainContent.Content = target switch
+            {
+                "Enrollment" => new EnrollmentView(),
+                "Reports" => new ReportsView(),
+                "Shift" => new ShiftSettingsView(),
+                _ => new LogsView(),
+            };
+
+            // NavButtonStyle lights up the button whose Tag is "Active".
+            BtnEnrollment.Tag = target == "Enrollment" ? "Active" : null;
+            BtnLogs.Tag = target == "Logs" ? "Active" : null;
+            BtnReports.Tag = target == "Reports" ? "Active" : null;
+            BtnShift.Tag = target == "Shift" ? "Active" : null;
+        }
+
+        private async void SignOut_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show(this, "Sign out of Staffly?", "Sign out",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                await SupabaseService.Instance.SignOutAsync();
+            }
+            catch (Exception ex)
+            {
+                // The local session is cleared either way; a failed server call shouldn't trap the user.
+                System.Diagnostics.Debug.WriteLine($"Sign-out error: {ex}");
+            }
+
+            SignedOut = true;
+            Close();
         }
     }
 }
