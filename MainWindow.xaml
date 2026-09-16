@@ -115,6 +115,18 @@
                             <TextBlock x:Name="LblShift" Text="Shift Settings" Margin="14,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+
+                    <Button x:Name="BtnUsers" Style="{StaticResource NavButtonStyle}"
+                            Click="NavButton_Click" CommandParameter="Users" ToolTip="Users">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- two people -->
+                            <Path Width="18" Height="18" Stretch="Uniform" StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Data="M 3 6 A 3 3 0 1 0 9 6 A 3 3 0 1 0 3 6 M 0 17 C 0 13.5 2.5 11 6 11 C 9.5 11 12 13.5 12 17 M 12.5 3.3 A 3 3 0 1 1 12.5 8.7 M 14 11.2 C 16.5 11.8 18 14 18 17"/>
+                            <TextBlock x:Name="LblUsers" Text="Users" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </DockPanel>
         </Border>

@@ -21,6 +21,6 @@ namespace Attendance_System.Data.Entities
         public string AbsentCutoff { get; set; } = "10:00:00";
 
         [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
     }
 }

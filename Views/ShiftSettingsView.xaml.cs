@@ -40,7 +40,7 @@ namespace Attendance_System.Views
                 var settings = await SupabaseService.Instance.GetShiftSettingsAsync();
                 _saved = (ParseTime(settings.ShiftStart), ParseTime(settings.LateCutoff), ParseTime(settings.AbsentCutoff));
                 ApplyToForm(_saved);
-                SetStatus(settings.UpdatedAt == default ? "" : $"Last saved {settings.UpdatedAt.ToLocalTime():MMM d, yyyy h:mm tt}", StatusKind.Info);
+                SetStatus(settings.UpdatedAt == default ? "" : $"Last saved {settings.UpdatedAt.LocalDateTime:MMM d, yyyy h:mm tt}", StatusKind.Info);
             }
             catch (Exception ex)
             {
@@ -128,7 +128,7 @@ namespace Attendance_System.Views
                 var saved = await SupabaseService.Instance.UpdateShiftSettingsAsync(v.Start, v.Late, v.Absent);
                 _saved = v;
                 RefreshState();
-                SetStatus($"Saved. New taps use these times from now on ({saved.UpdatedAt.ToLocalTime():h:mm tt}).", StatusKind.Success);
+                SetStatus($"Saved. New taps use these times from now on ({saved.UpdatedAt.LocalDateTime:h:mm tt}).", StatusKind.Success);
             }
             catch (Exception ex)
             {

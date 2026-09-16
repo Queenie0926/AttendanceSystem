@@ -17,12 +17,12 @@ namespace Attendance_System.Data.Entities
         public string EventType { get; set; } = "";
 
         [Column("event_timestamp")]
-        public DateTime EventTimestamp { get; set; }
+        public DateTimeOffset EventTimestamp { get; set; }
 
         [Column("is_late")]
         public bool IsLate { get; set; }
 
         [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
     }
 }

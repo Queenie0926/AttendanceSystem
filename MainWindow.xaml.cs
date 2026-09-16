@@ -19,7 +19,14 @@ namespace Attendance_System
         public MainWindow()
         {
             InitializeComponent();
-            TxtUserEmail.Text = SupabaseService.Instance.CurrentUserEmail ?? "";
+            var service = SupabaseService.Instance;
+            TxtUserEmail.Text = $"{service.CurrentUserEmail} · {service.CurrentRole}";
+
+            // Hide screens the role can't use. RLS enforces the same rules server-side.
+            BtnEnrollment.Visibility = service.CanManageStaff ? Visibility.Visible : Visibility.Collapsed;
+            BtnShift.Visibility = service.IsAdmin ? Visibility.Visible : Visibility.Collapsed;
+            BtnUsers.Visibility = service.IsAdmin ? Visibility.Visible : Visibility.Collapsed;
+
             Navigate("Logs");
         }
 
@@ -53,6 +60,7 @@ namespace Attendance_System
             LblLogs.Visibility = visibility;
             LblReports.Visibility = visibility;
             LblShift.Visibility = visibility;
+            LblUsers.Visibility = visibility;
             AccountText.Visibility = visibility;
             BrandText.Visibility = visibility;
             NavHeading.Visibility = visibility;
@@ -71,6 +79,7 @@ namespace Attendance_System
                 "Enrollment" => new EnrollmentView(),
                 "Reports" => new ReportsView(),
                 "Shift" => new ShiftSettingsView(),
+                "Users" => new UsersView(),
                 _ => new LogsView(),
             };
 
@@ -79,6 +88,7 @@ namespace Attendance_System
             BtnLogs.Tag = target == "Logs" ? "Active" : null;
             BtnReports.Tag = target == "Reports" ? "Active" : null;
             BtnShift.Tag = target == "Shift" ? "Active" : null;
+            BtnUsers.Tag = target == "Users" ? "Active" : null;
         }
 
         private async void SignOut_Click(object sender, RoutedEventArgs e)

@@ -43,6 +43,12 @@ namespace Attendance_System.Services
 
         public string? CurrentUserEmail => _client?.Auth.CurrentUser?.Email;
 
+        /// <summary>Role from the signed-in user's profiles row; null if they have none.</summary>
+        public string? CurrentRole { get; private set; }
+
+        public bool IsAdmin => CurrentRole == UserRoles.Admin;
+        public bool CanManageStaff => CurrentRole is UserRoles.Admin or UserRoles.Hr;
+
         public async Task<Session?> SignInAsync(string email, string password)
         {
             var client = RequireClient();
@@ -52,7 +58,61 @@ namespace Attendance_System.Services
         public async Task SignOutAsync()
         {
             var client = RequireClient();
+            CurrentRole = null;
             await client.Auth.SignOut();
+        }
+
+        // ── Profiles & roles ─────────────────────────────────────────────
+
+        /// <summary>Reads the signed-in user's own profile and caches their role.</summary>
+        public async Task<string?> LoadCurrentRoleAsync()
+        {
+            var client = RequireClient();
+            var userId = client.Auth.CurrentUser?.Id;
+            CurrentRole = null;
+            if (userId is null) return null;
+
+            var id = Guid.Parse(userId);
+            var response = await client.From<ProfileEntity>().Where(x => x.Id == id).Get();
+            CurrentRole = response.Models.FirstOrDefault()?.Role;
+            return CurrentRole;
+        }
+
+        public async Task<List<UserProfileRecord>> GetProfilesAsync()
+        {
+            var client = RequireClient();
+            var response = await client.From<ProfileEntity>()
+                .Order(x => x.Email!, Ordering.Ascending)
+                .Get();
+
+            var currentId = client.Auth.CurrentUser?.Id;
+            return response.Models.Select(p =>
+            {
+                var record = new UserProfileRecord
+                {
+                    Id = p.Id,
+                    Email = p.Email ?? "",
+                    IsCurrentUser = p.Id.ToString() == currentId,
+                    FullName = p.FullName ?? "",
+                    Role = p.Role,
+                };
+                record.MarkSaved();
+                return record;
+            }).ToList();
+        }
+
+        public async Task UpdateProfileAsync(Guid id, string fullName, string role)
+        {
+            var client = RequireClient();
+            var response = await client.From<ProfileEntity>()
+                .Where(x => x.Id == id)
+                .Set(x => x.FullName!, string.IsNullOrWhiteSpace(fullName) ? null! : fullName.Trim())
+                .Set(x => x.Role, role)
+                .Update();
+
+            // RLS silently filters out rows the caller may not update.
+            if (response.Models.Count == 0)
+                throw new InvalidOperationException("Update was not applied — only admins can change user profiles.");
         }
 
         // ── Staff ────────────────────────────────────────────────────────
@@ -134,7 +194,7 @@ namespace Attendance_System.Services
 
         private static StaffRecord ToRecord(StaffEntity e) => new()
         {
-            CreatedAt = e.CreatedAt.ToLocalTime(),
+            CreatedAt = e.CreatedAt.LocalDateTime,
             Id = e.Id,
             FirstName = e.FirstName,
             MiddleName = e.MiddleName,
@@ -158,12 +218,12 @@ namespace Attendance_System.Services
             if (from.HasValue)
             {
                 var fromUtc = from.Value.Date.ToUniversalTime();
-                query = query.Where(x => x.EventTimestamp >= fromUtc);
+                query = query.Filter("event_timestamp", Operator.GreaterThanOrEqual, fromUtc.ToString("o"));
             }
             if (to.HasValue)
             {
                 var toUtc = to.Value.Date.AddDays(1).ToUniversalTime();
-                query = query.Where(x => x.EventTimestamp < toUtc);
+                query = query.Filter("event_timestamp", Operator.LessThan, toUtc.ToString("o"));
             }
 
             var response = await query.Order(x => x.EventTimestamp, Ordering.Descending).Get();
@@ -191,7 +251,8 @@ namespace Attendance_System.Services
         private static AttendanceRecord ToRecord(AttendanceEventEntity e, Dictionary<Guid, StaffEntity> staffLookup)
         {
             var staffName = staffLookup.TryGetValue(e.StaffId, out var staff) ? ToRecord(staff).FullName : "(unknown)";
-            var localTime = e.EventTimestamp.ToLocalTime();
+            // DateTimeOffset keeps the UTC offset, so this converts exactly once.
+            var localTime = e.EventTimestamp.LocalDateTime;
 
             return new AttendanceRecord
             {
@@ -224,7 +285,7 @@ namespace Attendance_System.Services
                 .Set(x => x.ShiftStart, shiftStart.ToString(@"hh\:mm\:ss"))
                 .Set(x => x.LateCutoff, lateCutoff.ToString(@"hh\:mm\:ss"))
                 .Set(x => x.AbsentCutoff, absentCutoff.ToString(@"hh\:mm\:ss"))
-                .Set(x => x.UpdatedAt, DateTime.UtcNow)
+                .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow)
                 .Update();
 
             return response.Models.FirstOrDefault()

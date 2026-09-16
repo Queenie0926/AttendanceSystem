@@ -53,6 +53,17 @@ namespace Attendance_System
                     return;
                 }
 
+                var role = await SupabaseService.Instance.LoadCurrentRoleAsync();
+                if (role is null)
+                {
+                    await SupabaseService.Instance.SignOutAsync();
+                    StatusText.Foreground = (System.Windows.Media.Brush)FindResource("DangerBrush");
+                    StatusText.Text = "This account has no role assigned.";
+                    MessageBox.Show(this, "Your account has no role assigned yet. Ask an admin to set one up.",
+                        "Sign-In Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 DialogResult = true;
                 Close();
             }

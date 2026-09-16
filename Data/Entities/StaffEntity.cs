@@ -36,6 +36,6 @@ namespace Attendance_System.Data.Entities
         public string RfidUid { get; set; } = "";
 
         [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
     }
 }
