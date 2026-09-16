@@ -39,7 +39,7 @@
         <Grid Grid.Column="1">
             <StackPanel Width="320" VerticalAlignment="Center">
                 <TextBlock Text="Admin sign in" Style="{StaticResource PageTitleStyle}"/>
-                <TextBlock Text="Use the account created in Supabase Auth." Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,28"/>
+                <TextBlock Text="Use the account created for admin." Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,28"/>
 
                 <TextBlock Text="Email address" Style="{StaticResource FieldLabelStyle}"/>
                 <TextBox x:Name="TxtEmail" Style="{StaticResource ModernTextBoxStyle}" Margin="0,0,0,16"/>
