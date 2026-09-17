@@ -1,90 +1,86 @@
 <UserControl x:Class="Attendance_System.Views.LogsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:h="clr-namespace:Attendance_System.Helpers">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,24">
-            <TextBlock Text="Attendance Logs" Style="{StaticResource PageTitleStyle}"/>
-            <TextBlock Text="Every verified tap, with TIME-IN / TIME-OUT decided by the server."
-                       Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,0"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Style="{StaticResource PageHeaderStyle}">
+            <StackPanel>
+                <TextBlock Text="Attendance Logs" Style="{StaticResource PageTitleStyle}"/>
+                
+            </StackPanel>
+        </Grid>
 
-        <!-- Filters -->
-        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="20" Margin="0,0,0,20">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="1.5*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="From" Style="{StaticResource FieldLabelStyle}"/>
-                    <DatePicker x:Name="DateFrom" Style="{StaticResource ModernDatePickerStyle}"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="To" Style="{StaticResource FieldLabelStyle}"/>
-                    <DatePicker x:Name="DateTo" Style="{StaticResource ModernDatePickerStyle}"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="4">
-                    <TextBlock Text="Staff name" Style="{StaticResource FieldLabelStyle}"/>
-                    <TextBox x:Name="TxtStaffFilter" Style="{StaticResource ModernTextBoxStyle}" KeyDown="TxtStaffFilter_KeyDown"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="6">
-                    <TextBlock Text="Status" Style="{StaticResource FieldLabelStyle}"/>
-                    <ComboBox x:Name="CmbStatus" Style="{StaticResource ModernComboBoxStyle}" SelectedIndex="0">
-                        <ComboBoxItem Content="All"/>
-                        <ComboBoxItem Content="Time In"/>
-                        <ComboBoxItem Content="Time Out"/>
-                    </ComboBox>
-                </StackPanel>
-
-                <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Bottom">
-                    <Button Content="Reset" Style="{StaticResource SubtleButtonStyle}" Margin="0,0,6,2" Click="ResetButton_Click"/>
-                    <Button x:Name="BtnApply" Content="Apply filters" Style="{StaticResource PrimaryButtonStyle}" Click="FilterButton_Click"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Results -->
-        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="0">
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="0">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="24,18,24,14">
-                    <StackPanel Orientation="Horizontal">
+                <!-- Title row: count + status tabs -->
+                <Grid Grid.Row="0" Margin="24,20,24,12">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Events" Style="{StaticResource SectionTitleStyle}"/>
-                        <Border Background="{StaticResource SurfaceMutedBrush}" CornerRadius="{StaticResource RadiusBadge}"
-                                Padding="7,1" Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Items.Count, ElementName=LogsGrid}" FontSize="{StaticResource FontSizeSmall}"
-                                       FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <Border Style="{StaticResource CountChipStyle}">
+                            <TextBlock Text="{Binding Items.Count, ElementName=LogsGrid}" Style="{StaticResource CountChipTextStyle}"/>
                         </Border>
+                        <TextBlock x:Name="LoadingText" Text="Loading…" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Style="{StaticResource HelpTextStyle}" Visibility="Collapsed"/>
                     </StackPanel>
-                    <TextBlock x:Name="LoadingText" Text="Loading…" HorizontalAlignment="Right" VerticalAlignment="Center"
-                               Style="{StaticResource HelpTextStyle}" Visibility="Collapsed"/>
+
+                    <Border Style="{StaticResource SegmentedTrackStyle}" HorizontalAlignment="Right">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="TabAll" Content="All" GroupName="Status" IsChecked="True"
+                                         Style="{StaticResource SegmentedTabStyle}" Checked="StatusTab_Checked"/>
+                            <RadioButton x:Name="TabIn" Content="Time In" GroupName="Status"
+                                         Style="{StaticResource SegmentedTabStyle}" Checked="StatusTab_Checked"/>
+                            <RadioButton x:Name="TabOut" Content="Time Out" GroupName="Status"
+                                         Style="{StaticResource SegmentedTabStyle}" Checked="StatusTab_Checked"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
-                <DataGrid x:Name="LogsGrid" Grid.Row="1" Style="{StaticResource ModernDataGridStyle}">
+                <!-- Filters -->
+                <Grid Grid.Row="1" Margin="24,0,24,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="170"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="170"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="TxtStaffFilter" Style="{StaticResource SearchBoxStyle}" Tag="Search staff name, then press Enter"
+                             KeyDown="TxtStaffFilter_KeyDown" AutomationProperties.Name="Search staff name"/>
+                    <DatePicker x:Name="DateFrom" Grid.Column="2" Style="{StaticResource ModernDatePickerStyle}"
+                                h:DatePickerWatermark.Text="From date" SelectedDateChanged="Date_Changed" ToolTip="From date" AutomationProperties.Name="From date"/>
+                    <DatePicker x:Name="DateTo" Grid.Column="4" Style="{StaticResource ModernDatePickerStyle}"
+                                h:DatePickerWatermark.Text="To date" SelectedDateChanged="Date_Changed" ToolTip="To date" AutomationProperties.Name="To date"/>
+                    <Button Grid.Column="6" Content="Reset" Style="{StaticResource SubtleButtonStyle}" Height="40" Click="ResetButton_Click"/>
+                </Grid>
+
+                <DataGrid x:Name="LogsGrid" Grid.Row="2" Style="{StaticResource ModernDataGridStyle}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="STAFF NAME" Binding="{Binding StaffName}" Width="2*"/>
+                        <DataGridTemplateColumn Header="STAFF" Width="2*" SortMemberPath="StaffName">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ContentControl Style="{StaticResource AvatarStyle}" Content="{Binding StaffName}"/>
+                                        <TextBlock Text="{Binding StaffName}" FontWeight="SemiBold" Margin="12,0,0,0"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="DATE" Binding="{Binding DateDisplay}" Width="1.2*"/>
                         <DataGridTextColumn Header="TIME" Binding="{Binding TimeDisplay}" Width="1*"/>
                         <DataGridTemplateColumn Header="STATUS" Width="1.3*">
@@ -101,7 +97,7 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <StackPanel x:Name="EmptyState" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,0"
+                <StackPanel x:Name="EmptyState" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,0"
                             Visibility="{Binding HasItems, ElementName=LogsGrid, Converter={StaticResource InverseBoolToVisibility}}">
                     <TextBlock Text="No attendance events" Style="{StaticResource SectionTitleStyle}" HorizontalAlignment="Center"/>
                     <TextBlock Text="Taps verified on the terminal will show up here. Try widening the date range."

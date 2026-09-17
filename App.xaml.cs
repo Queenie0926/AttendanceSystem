@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Attendance_System.Config;
+using Attendance_System.Helpers;
 using Attendance_System.Services;
 
 namespace Attendance_System
@@ -9,6 +10,7 @@ namespace Attendance_System
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            ClickAwayFocus.Register();
 
             try
             {
@@ -27,8 +29,7 @@ namespace Attendance_System
             ShowLogin();
         }
 
-        // ShutdownMode is OnExplicitShutdown (App.xaml), so closing a window
-        // never ends the app by itself — this method decides what comes next.
+
         private void ShowLogin()
         {
             var login = new LoginWindow();

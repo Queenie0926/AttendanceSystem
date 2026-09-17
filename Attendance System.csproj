@@ -11,11 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\um_logo1.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\um_logo1.png" />
     <Resource Include="Assets\staffly_mark.png" />
     <Resource Include="Assets\staffly.ico" />
   </ItemGroup>

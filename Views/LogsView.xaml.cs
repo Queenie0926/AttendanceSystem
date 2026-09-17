@@ -7,16 +7,21 @@ namespace Attendance_System.Views
 {
     public partial class LogsView : UserControl
     {
+        // Suppresses reloads while Reset clears several filters at once.
+        private bool _suspendReload = true;
+
         public LogsView()
         {
             InitializeComponent();
-            Loaded += async (s, e) => await LoadLogsAsync();
+            Loaded += async (s, e) =>
+            {
+                _suspendReload = false;
+                await ApplyFiltersAsync();
+            };
         }
 
-        private async Task LoadLogsAsync(
-            DateTime? from = null, DateTime? to = null, string? staffFilter = null, string? statusFilter = null)
+        private async Task LoadLogsAsync(DateTime? from, DateTime? to, string? staffFilter, string? statusFilter)
         {
-            BtnApply.IsEnabled = false;
             LoadingText.Visibility = Visibility.Visible;
             try
             {
@@ -29,12 +34,13 @@ namespace Attendance_System.Views
             }
             finally
             {
-                BtnApply.IsEnabled = true;
                 LoadingText.Visibility = Visibility.Collapsed;
             }
         }
 
-        private async void FilterButton_Click(object sender, RoutedEventArgs e) => await ApplyFiltersAsync();
+        private async void StatusTab_Checked(object sender, RoutedEventArgs e) => await ApplyFiltersAsync();
+
+        private async void Date_Changed(object? sender, SelectionChangedEventArgs e) => await ApplyFiltersAsync();
 
         private async void TxtStaffFilter_KeyDown(object sender, KeyEventArgs e)
         {
@@ -44,16 +50,20 @@ namespace Attendance_System.Views
 
         private async void ResetButton_Click(object sender, RoutedEventArgs e)
         {
+            _suspendReload = true;
             DateFrom.SelectedDate = null;
             DateTo.SelectedDate = null;
             TxtStaffFilter.Clear();
-            CmbStatus.SelectedIndex = 0;
-            await LoadLogsAsync();
+            TabAll.IsChecked = true;
+            _suspendReload = false;
+            await ApplyFiltersAsync();
         }
 
         private Task ApplyFiltersAsync()
         {
-            string status = (CmbStatus.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "All";
+            if (_suspendReload) return Task.CompletedTask;
+
+            string status = TabIn.IsChecked == true ? "Time In" : TabOut.IsChecked == true ? "Time Out" : "All";
             return LoadLogsAsync(DateFrom.SelectedDate, DateTo.SelectedDate, TxtStaffFilter.Text.Trim(), status);
         }
     }

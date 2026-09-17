@@ -129,7 +129,7 @@ namespace Attendance_System.Services
 
         public async Task<StaffRecord> AddStaffAsync(
             string firstName, string? middleName, string lastName, string email,
-            string department, string program, string positionRole, string rfidUid)
+            string department, string program, string positionRole, string rfidUid, StaffShift? shift = null)
         {
             var client = RequireClient();
             var entity = new StaffEntity
@@ -142,6 +142,9 @@ namespace Attendance_System.Services
                 Program = program,
                 PositionRole = positionRole,
                 RfidUid = rfidUid,
+                ShiftStart = shift is null ? null : ToDbTime(shift.Start),
+                LateCutoff = shift is null ? null : ToDbTime(shift.LateCutoff),
+                AbsentCutoff = shift is null ? null : ToDbTime(shift.AbsentCutoff),
             };
 
             var response = await client.From<StaffEntity>().Insert(entity);
@@ -150,7 +153,7 @@ namespace Attendance_System.Services
 
         public async Task<StaffRecord> UpdateStaffAsync(
             Guid staffId, string firstName, string? middleName, string lastName, string email,
-            string department, string program, string positionRole, string rfidUid)
+            string department, string program, string positionRole, string rfidUid, StaffShift? shift)
         {
             var client = RequireClient();
             var response = await client.From<StaffEntity>()
@@ -163,6 +166,9 @@ namespace Attendance_System.Services
                 .Set(x => x.Program, program)
                 .Set(x => x.PositionRole, positionRole)
                 .Set(x => x.RfidUid, rfidUid)
+                .Set(x => x.ShiftStart!, shift is null ? null! : ToDbTime(shift.Start))
+                .Set(x => x.LateCutoff!, shift is null ? null! : ToDbTime(shift.LateCutoff))
+                .Set(x => x.AbsentCutoff!, shift is null ? null! : ToDbTime(shift.AbsentCutoff))
                 .Update();
 
             return ToRecord(response.Models.FirstOrDefault()
@@ -204,7 +210,16 @@ namespace Attendance_System.Services
             Program = e.Program,
             PositionRole = e.PositionRole,
             RfidUid = e.RfidUid,
+            Shift = e.ShiftStart is not null && e.LateCutoff is not null && e.AbsentCutoff is not null
+                ? new StaffShift(TimeSpan.Parse(e.ShiftStart), TimeSpan.Parse(e.LateCutoff), TimeSpan.Parse(e.AbsentCutoff))
+                : null,
         };
+
+        /// <summary>True when an insert/update hit the unique constraint on staff.rfid_uid.</summary>
+        public static bool IsDuplicateRfid(Exception ex) =>
+            ex.Message.Contains("23505") && ex.Message.Contains("staff_rfid_uid_key");
+
+        private static string ToDbTime(TimeSpan t) => t.ToString(@"hh\:mm\:ss");
 
         // ── Attendance ───────────────────────────────────────────────────
 
@@ -257,6 +272,7 @@ namespace Attendance_System.Services
             return new AttendanceRecord
             {
                 Id = e.Id,
+                StaffId = e.StaffId,
                 StaffName = staffName,
                 Date = localTime.Date,
                 Time = localTime.TimeOfDay,

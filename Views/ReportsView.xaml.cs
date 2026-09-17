@@ -19,6 +19,11 @@ namespace Attendance_System.Views
             DateTo.SelectedDate = DateTime.Today;
         }
 
+        private void TxtStaffFilter_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter) GenerateButton_Click(sender, e);
+        }
+
         private async void GenerateButton_Click(object sender, RoutedEventArgs e)
         {
             if (DateFrom.SelectedDate is null || DateTo.SelectedDate is null)

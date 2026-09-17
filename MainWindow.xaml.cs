@@ -20,14 +20,25 @@ namespace Attendance_System
         {
             InitializeComponent();
             var service = SupabaseService.Instance;
-            TxtUserEmail.Text = $"{service.CurrentUserEmail} · {service.CurrentRole}";
+            string email = service.CurrentUserEmail ?? "";
+            string displayName = email.Contains('@') ? email[..email.IndexOf('@')] : email;
+            TxtAccountName.Text = displayName;
+            AccountAvatar.Content = displayName;
+            TxtAccountRole.Text = service.CurrentRole switch
+            {
+                "admin" => "Administrator",
+                "hr" => "HR",
+                "viewer" => "Viewer",
+                _ => "No role",
+            };
+            TxtToday.Text = DateTime.Now.ToString("dddd, MMMM d, yyyy");
 
             // Hide screens the role can't use. RLS enforces the same rules server-side.
             BtnEnrollment.Visibility = service.CanManageStaff ? Visibility.Visible : Visibility.Collapsed;
             BtnShift.Visibility = service.IsAdmin ? Visibility.Visible : Visibility.Collapsed;
             BtnUsers.Visibility = service.IsAdmin ? Visibility.Visible : Visibility.Collapsed;
 
-            Navigate("Logs");
+            Navigate("Dashboard");
         }
 
         private void ToggleNav_Click(object sender, RoutedEventArgs e)
@@ -56,12 +67,12 @@ namespace Attendance_System
         private void SetLabelsVisible(bool visible)
         {
             var visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            LblDashboard.Visibility = visibility;
             LblEnrollment.Visibility = visibility;
             LblLogs.Visibility = visibility;
             LblReports.Visibility = visibility;
             LblShift.Visibility = visibility;
             LblUsers.Visibility = visibility;
-            AccountText.Visibility = visibility;
             BrandText.Visibility = visibility;
             NavHeading.Visibility = visibility;
         }
@@ -76,6 +87,7 @@ namespace Attendance_System
         {
             MainContent.Content = target switch
             {
+                "Dashboard" => new DashboardView(),
                 "Enrollment" => new EnrollmentView(),
                 "Reports" => new ReportsView(),
                 "Shift" => new ShiftSettingsView(),
@@ -84,11 +96,29 @@ namespace Attendance_System
             };
 
             // NavButtonStyle lights up the button whose Tag is "Active".
+            BtnDashboard.Tag = target == "Dashboard" ? "Active" : null;
             BtnEnrollment.Tag = target == "Enrollment" ? "Active" : null;
             BtnLogs.Tag = target == "Logs" ? "Active" : null;
             BtnReports.Tag = target == "Reports" ? "Active" : null;
             BtnShift.Tag = target == "Shift" ? "Active" : null;
             BtnUsers.Tag = target == "Users" ? "Active" : null;
+        }
+
+        private void Account_Click(object sender, RoutedEventArgs e)
+        {
+            var email = new MenuItem { Header = SupabaseService.Instance.CurrentUserEmail, IsEnabled = false };
+            var signOut = new MenuItem { Header = "Sign out", Style = (Style)FindResource("DangerMenuItemStyle") };
+            signOut.Click += SignOut_Click;
+
+            var menu = new ContextMenu
+            {
+                PlacementTarget = BtnAccount,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom,
+            };
+            menu.Items.Add(email);
+            menu.Items.Add(new Separator { Style = (Style)FindResource("MenuSeparatorStyle") });
+            menu.Items.Add(signOut);
+            menu.IsOpen = true;
         }
 
         private async void SignOut_Click(object sender, RoutedEventArgs e)

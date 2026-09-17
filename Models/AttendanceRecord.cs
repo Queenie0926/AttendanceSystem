@@ -3,6 +3,7 @@
     public class AttendanceRecord
     {
         public Guid Id { get; set; }
+        public Guid StaffId { get; set; }
         public string StaffName { get; set; } = "";
         public DateTime Date { get; set; }
         public TimeSpan Time { get; set; }
@@ -11,6 +12,10 @@
 
         public string DateDisplay => Date.ToString("MM/dd/yyyy");
         public string TimeDisplay => DateTime.Today.Add(Time).ToString("hh:mm tt");
+        public string RelativeDateDisplay =>
+            Date.Date == DateTime.Today ? "Today"
+            : Date.Date == DateTime.Today.AddDays(-1) ? "Yesterday"
+            : Date.ToString("MMM d");
         public string StatusDisplay => IsLate ? $"{Status} (Late)" : Status;
     }
 

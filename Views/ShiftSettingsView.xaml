@@ -11,8 +11,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,24">
             <TextBlock Text="Shift Settings" Style="{StaticResource PageTitleStyle}"/>
-            <TextBlock Text="Applies to every staff member. Changes take effect on the next tap — no restart needed."
-                       Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,0"/>
+            
         </StackPanel>
 
         <Border Grid.Row="1" Style="{StaticResource CardStyle}" MaxWidth="760" HorizontalAlignment="Left">

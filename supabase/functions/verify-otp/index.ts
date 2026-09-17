@@ -57,7 +57,7 @@ serve(async (req) => {
 
     const { data: staffMember, error: staffError } = await supabase
       .from("staff")
-      .select("id, first_name, middle_name, last_name, email")
+      .select("id, first_name, middle_name, last_name, email, late_cutoff")
       .eq("rfid_uid", rfid_uid)
       .maybeSingle();
     if (staffError) throw staffError;
@@ -117,11 +117,18 @@ serve(async (req) => {
     // Late detection only applies to TIME-IN.
     let isLate = false;
     if (nextEventType === "TIME-IN") {
-      const { data: settings } = await supabase
-        .from("shift_settings")
-        .select("late_cutoff")
-        .eq("id", 1)
-        .maybeSingle();
+      // A staff member's own shift wins; otherwise use the default.
+      let settings: { late_cutoff: string } | null = staffMember.late_cutoff
+        ? { late_cutoff: staffMember.late_cutoff }
+        : null;
+      if (!settings) {
+        const { data } = await supabase
+          .from("shift_settings")
+          .select("late_cutoff")
+          .eq("id", 1)
+          .maybeSingle();
+        settings = data;
+      }
 
       if (settings) {
         // shift_settings times are Philippine wall-clock times, but the edge

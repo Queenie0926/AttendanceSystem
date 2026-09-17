@@ -18,7 +18,7 @@
         <Border x:Name="SidebarBorder" Grid.Column="0" Width="240" Margin="16,16,0,16"
                 Background="{StaticResource SidebarBrush}" CornerRadius="16">
             <Border.Effect>
-                <DropShadowEffect Color="#092122" Opacity="0.18" BlurRadius="24" ShadowDepth="4" Direction="270"/>
+                <DropShadowEffect Color="#450E15" Opacity="0.18" BlurRadius="24" ShadowDepth="4" Direction="270"/>
             </Border.Effect>
 
             <DockPanel>
@@ -44,24 +44,7 @@
 
                 <!-- Account + collapse, pinned to bottom -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,12">
-                    <Border Height="1" Background="{StaticResource SidebarBorderBrush}" Margin="16,0,16,10"/>
-
-                    <Button x:Name="BtnSignOut" Style="{StaticResource NavButtonStyle}" Click="SignOut_Click" ToolTip="Sign out">
-                        <StackPanel Orientation="Horizontal">
-                            <!-- door + arrow -->
-                            <Path Width="18" Height="18" Stretch="Uniform" StrokeThickness="1.5"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                  Data="M 8 2 H 3 V 18 H 8 M 13 6 L 17 10 L 13 14 M 17 10 H 7"/>
-                            <StackPanel x:Name="AccountText" Margin="14,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Sign out"/>
-                                <TextBlock x:Name="TxtUserEmail" FontSize="11" Foreground="{StaticResource SidebarMutedTextBrush}"
-                                           TextTrimming="CharacterEllipsis" MaxWidth="160"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Button>
-
-                    <Button x:Name="BtnToggleNav" Style="{StaticResource RailToggleStyle}" Margin="18,6,0,0"
+                    <Button x:Name="BtnToggleNav" Style="{StaticResource RailToggleStyle}" Margin="18,0,0,0"
                             HorizontalAlignment="Left" Click="ToggleNav_Click" ToolTip="Collapse or expand sidebar">
                         <Path x:Name="ToggleGlyph" Width="16" Height="16" Stretch="Uniform" StrokeThickness="1.6"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
@@ -74,13 +57,24 @@
                     <TextBlock x:Name="NavHeading" Text="MENU" FontSize="10" FontWeight="SemiBold"
                                Foreground="{StaticResource SidebarMutedTextBrush}" Margin="24,4,0,8"/>
 
+                    <Button x:Name="BtnDashboard" Style="{StaticResource NavButtonStyle}"
+                            Click="NavButton_Click" CommandParameter="Dashboard" ToolTip="Dashboard">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- four tiles -->
+                            <Path Width="18" Height="18" Stretch="Uniform" StrokeThickness="1.5" StrokeLineJoin="Round"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Data="M 1 1 H 8 V 8 H 1 Z M 12 1 H 19 V 8 H 12 Z M 1 12 H 8 V 19 H 1 Z M 12 12 H 19 V 19 H 12 Z"/>
+                            <TextBlock x:Name="LblDashboard" Text="Dashboard" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button x:Name="BtnEnrollment" Style="{StaticResource NavButtonStyle}"
-                            Click="NavButton_Click" CommandParameter="Enrollment" ToolTip="Enrollment">
+                            Click="NavButton_Click" CommandParameter="Enrollment" ToolTip="Staff">
                         <StackPanel Orientation="Horizontal">
                             <Path Width="18" Height="18" Stretch="Uniform" StrokeThickness="1.5"
                                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                   Data="M 4 7 A 3.5 3.5 0 1 0 11 7 A 3.5 3.5 0 1 0 4 7 M 1 18 C 1 14.5 3.7 12 7.5 12 C 11.3 12 14 14.5 14 18 M 17 5 V 11 M 14 8 H 20"/>
-                            <TextBlock x:Name="LblEnrollment" Text="Enrollment" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="LblEnrollment" Text="Staff" Margin="14,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -132,7 +126,37 @@
         </Border>
 
         <!-- ── Content ── -->
-        <!-- No outer ScrollViewer: each view's DataGrid fills the remaining height and scrolls itself. -->
-        <ContentControl x:Name="MainContent" Grid.Column="1" Margin="32,32,36,32" MaxWidth="1400"/>
+        <Grid Grid.Column="1" Margin="32,16,36,28" MaxWidth="1400">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top bar: today's date, and the signed-in account (menu holds Sign out) -->
+            <Grid Grid.Row="0" Height="56" Margin="0,0,0,12">
+                <TextBlock x:Name="TxtToday" VerticalAlignment="Center"
+                           FontSize="{StaticResource FontSizeBody}" Foreground="{StaticResource TextSecondaryBrush}"/>
+
+                <Button x:Name="BtnAccount" Style="{StaticResource AccountButtonStyle}" HorizontalAlignment="Right"
+                        Click="Account_Click" ToolTip="Account" AutomationProperties.Name="Account menu">
+                    <StackPanel Orientation="Horizontal">
+                        <ContentControl x:Name="AccountAvatar" Style="{StaticResource AvatarStyle}"/>
+                        <StackPanel Margin="10,0,10,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtAccountName" FontSize="{StaticResource FontSizeBody}" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock x:Name="TxtAccountRole" FontSize="{StaticResource FontSizeSmall}"
+                                       Foreground="{StaticResource TextMutedBrush}"/>
+                        </StackPanel>
+                        <Path Width="10" Height="6" Stretch="Uniform" VerticalAlignment="Center"
+                              Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.5"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                              Data="M 0 0 L 5 5 L 10 0"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- No outer ScrollViewer: each view's DataGrid fills the remaining height and scrolls itself. -->
+            <ContentControl x:Name="MainContent" Grid.Row="1"/>
+        </Grid>
     </Grid>
 </Window>

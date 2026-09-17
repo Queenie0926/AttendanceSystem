@@ -8,11 +8,18 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,24">
-            <TextBlock Text="Users" Style="{StaticResource PageTitleStyle}"/>
-            <TextBlock Text="Who can sign in to Staffly and what they can do. Create new accounts in Supabase → Authentication → Users."
-                       Style="{StaticResource PageSubtitleStyle}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Style="{StaticResource PageHeaderStyle}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Users" Style="{StaticResource PageTitleStyle}"/>
+                
+            </StackPanel>
+            <Button x:Name="BtnRefresh" Grid.Column="1" Content="Refresh" Style="{StaticResource SecondaryButtonStyle}"
+                    VerticalAlignment="Center" Click="Refresh_Click"/>
+        </Grid>
 
         <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="0">
             <Grid>
@@ -22,31 +29,27 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="24,18,24,14">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Accounts" Style="{StaticResource SectionTitleStyle}"/>
-                        <Border Background="{StaticResource SurfaceMutedBrush}" CornerRadius="{StaticResource RadiusBadge}"
-                                Padding="7,1" Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Items.Count, ElementName=UsersGrid}" FontSize="{StaticResource FontSizeSmall}"
-                                       FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
-                        </Border>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <TextBlock x:Name="LoadingText" Text="Loading…" VerticalAlignment="Center" Margin="0,0,12,0"
-                                   Style="{StaticResource HelpTextStyle}" Visibility="Collapsed"/>
-                        <Button x:Name="BtnRefresh" Content="Refresh" Style="{StaticResource SubtleButtonStyle}" Click="Refresh_Click"/>
-                    </StackPanel>
-                </Grid>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="24,20,24,16">
+                    <TextBlock Text="Accounts" Style="{StaticResource SectionTitleStyle}"/>
+                    <Border Style="{StaticResource CountChipStyle}">
+                        <TextBlock Text="{Binding Items.Count, ElementName=UsersGrid}" Style="{StaticResource CountChipTextStyle}"/>
+                    </Border>
+                    <TextBlock x:Name="LoadingText" Text="Loading…" VerticalAlignment="Center" Margin="12,0,0,0"
+                               Style="{StaticResource HelpTextStyle}" Visibility="Collapsed"/>
+                </StackPanel>
 
-                <DataGrid x:Name="UsersGrid" Grid.Row="1" Style="{StaticResource ModernDataGridStyle}" RowHeight="58">
+                <DataGrid x:Name="UsersGrid" Grid.Row="1" Style="{StaticResource ModernDataGridStyle}" RowHeight="64">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="EMAIL" Width="2*">
+                        <DataGridTemplateColumn Header="ACCOUNT" Width="2*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Email}" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="You" Style="{StaticResource HelpTextStyle}"
-                                                   Visibility="{Binding IsCurrentUser, Converter={StaticResource BoolToVisibility}}"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ContentControl Style="{StaticResource AvatarStyle}" Content="{Binding Email}"/>
+                                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Email}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="You" Style="{StaticResource HelpTextStyle}"
+                                                       Visibility="{Binding IsCurrentUser, Converter={StaticResource BoolToVisibility}}"/>
+                                        </StackPanel>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

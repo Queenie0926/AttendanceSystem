@@ -21,19 +21,27 @@ namespace Attendance_System.Data.Entities
         [Column("email")]
         public string Email { get; set; } = "";
 
-        // Only "College of Engineering Education" for this prototype.
         [Column("department")]
         public string Department { get; set; } = "";
 
         [Column("program")]
         public string Program { get; set; } = "";
 
-        // "Dean" | "Assistant Dean" | "Program Head" | "Faculty Member"
         [Column("position_role")]
         public string PositionRole { get; set; } = "";
 
         [Column("rfid_uid")]
         public string RfidUid { get; set; } = "";
+
+        // Own shift ("HH:mm:ss"); all null means the default shift_settings row applies.
+        [Column("shift_start")]
+        public string? ShiftStart { get; set; }
+
+        [Column("late_cutoff")]
+        public string? LateCutoff { get; set; }
+
+        [Column("absent_cutoff")]
+        public string? AbsentCutoff { get; set; }
 
         [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
         public DateTimeOffset CreatedAt { get; set; }

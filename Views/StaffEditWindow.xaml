@@ -8,7 +8,7 @@
         FontFamily="{StaticResource FontFamilyBase}">
 
     <StackPanel Margin="24">
-        <TextBlock Text="Edit staff" Style="{StaticResource PageTitleStyle}" FontSize="19"/>
+        <TextBlock x:Name="TxtTitle" Text="Edit staff" Style="{StaticResource PageTitleStyle}" FontSize="20"/>
         <TextBlock x:Name="TxtSubtitle" Style="{StaticResource PageSubtitleStyle}" Margin="0,2,0,20"/>
 
         <Border Style="{StaticResource CardStyle}" Padding="20">
@@ -68,6 +68,48 @@
             </Grid>
         </Border>
 
+        <Border Style="{StaticResource CardStyle}" Padding="20" Margin="0,14,0,0">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Shift" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock x:Name="TxtShiftHelp" Style="{StaticResource HelpTextStyle}" TextWrapping="Wrap" Margin="0,2,12,0"/>
+                    </StackPanel>
+                    <ComboBox x:Name="CmbShiftMode" Grid.Column="1" Style="{StaticResource ModernComboBoxStyle}"
+                              VerticalAlignment="Center" SelectionChanged="CmbShiftMode_SelectionChanged">
+                        <ComboBoxItem Content="Default shift"/>
+                        <ComboBoxItem Content="Custom shift"/>
+                    </ComboBox>
+                </Grid>
+
+                <Grid x:Name="CustomShiftPanel" Margin="0,16,0,0" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Shift start" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbShiftStart" Style="{StaticResource ModernComboBoxStyle}" DisplayMemberPath="Label" MaxDropDownHeight="240"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Late after" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbLateCutoff" Style="{StaticResource ModernComboBoxStyle}" DisplayMemberPath="Label" MaxDropDownHeight="240"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Text="Absent after" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbAbsentCutoff" Style="{StaticResource ModernComboBoxStyle}" DisplayMemberPath="Label" MaxDropDownHeight="240"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
         <Grid Margin="0,20,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -77,7 +119,7 @@
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0"
                        FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource DangerBrush}"/>
             <Button Grid.Column="1" Content="Cancel" Style="{StaticResource SubtleButtonStyle}" Margin="0,0,8,0" IsCancel="True"/>
-            <Button x:Name="BtnSave" Grid.Column="2" Content="Save changes" Style="{StaticResource PrimaryButtonStyle}" Click="Save_Click"/>
+            <Button x:Name="BtnSave" Grid.Column="2" Content="Save changes" IsDefault="True" Style="{StaticResource PrimaryButtonStyle}" Click="Save_Click"/>
         </Grid>
     </StackPanel>
 </Window>
