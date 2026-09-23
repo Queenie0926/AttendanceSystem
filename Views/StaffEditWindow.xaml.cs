@@ -33,6 +33,7 @@ namespace Attendance_System.Views
             CmbShiftStart.ItemsSource = _times;
             CmbLateCutoff.ItemsSource = _times;
             CmbAbsentCutoff.ItemsSource = _times;
+            CmbShiftEnd.ItemsSource = _times;
 
             if (staff is null)
             {
@@ -76,7 +77,8 @@ namespace Attendance_System.Views
             try
             {
                 var d = await SupabaseService.Instance.GetShiftSettingsAsync();
-                _defaultShift = new StaffShift(ParseTime(d.ShiftStart), ParseTime(d.LateCutoff), ParseTime(d.AbsentCutoff));
+                _defaultShift = new StaffShift(ParseTime(d.ShiftStart), ParseTime(d.LateCutoff),
+                                               ParseTime(d.AbsentCutoff), ParseTime(d.ShiftEnd));
                 if (_original?.Shift is null) SelectShift(_defaultShift);   // starting point when switching to Custom
                 UpdateShiftHelp();
             }
@@ -117,6 +119,7 @@ namespace Attendance_System.Views
             CmbShiftStart.SelectedItem = OptionFor(shift.Start);
             CmbLateCutoff.SelectedItem = OptionFor(shift.LateCutoff);
             CmbAbsentCutoff.SelectedItem = OptionFor(shift.AbsentCutoff);
+            CmbShiftEnd.SelectedItem = OptionFor(shift.ShiftEnd);
         }
 
         // Times off the 15-minute grid (e.g. edited in Supabase) still show up.
@@ -130,6 +133,7 @@ namespace Attendance_System.Views
             CmbShiftStart.Items.Refresh();
             CmbLateCutoff.Items.Refresh();
             CmbAbsentCutoff.Items.Refresh();
+            CmbShiftEnd.Items.Refresh();
             return match;
         }
 
@@ -141,12 +145,14 @@ namespace Attendance_System.Views
 
             if (CmbShiftStart.SelectedItem is not TimeOption start ||
                 CmbLateCutoff.SelectedItem is not TimeOption late ||
-                CmbAbsentCutoff.SelectedItem is not TimeOption absent)
-                return "Pick all three shift times, or switch back to the default shift.";
+                CmbAbsentCutoff.SelectedItem is not TimeOption absent ||
+                CmbShiftEnd.SelectedItem is not TimeOption end)
+                return "Pick all four shift times, or switch back to the default shift.";
             if (late.Value < start.Value) return "\"Late after\" can't be earlier than the shift start.";
             if (absent.Value <= late.Value) return "\"Absent after\" must be later than \"Late after\".";
+            if (end.Value <= absent.Value) return "\"Shift end\" must be later than \"Absent after\".";
 
-            shift = new StaffShift(start.Value, late.Value, absent.Value);
+            shift = new StaffShift(start.Value, late.Value, absent.Value, end.Value);
             return null;
         }
 

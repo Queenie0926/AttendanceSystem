@@ -18,7 +18,10 @@ namespace Attendance_System.Data.Entities
         public string LateCutoff { get; set; } = "08:15:00";
 
         [Column("absent_cutoff")]
-        public string AbsentCutoff { get; set; } = "10:00:00";
+        public string AbsentCutoff { get; set; } = "12:00:00";
+
+        [Column("shift_end")]
+        public string ShiftEnd { get; set; } = "17:00:00";
 
         [Column("updated_at")]
         public DateTimeOffset UpdatedAt { get; set; }

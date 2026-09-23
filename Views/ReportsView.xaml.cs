@@ -1,6 +1,7 @@
 using Attendance_System.Models;
 using Attendance_System.Services;
 using Microsoft.Win32;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -59,16 +60,25 @@ namespace Attendance_System.Views
                     grouped[key] = entry;
                 }
 
+                entry.IsRestDay = log.IsRestDay;
+
                 if (log.Status == "Time In" && entry.TimeIn == "--")
                 {
                     entry.TimeIn = DateTime.Today.Add(log.Time).ToString("hh:mm tt");
                     entry.IsLate = log.IsLate;
+                    entry.IsAbsent = log.IsAbsent;
                 }
                 else if (log.Status == "Time Out")
                 {
                     entry.TimeOut = DateTime.Today.Add(log.Time).ToString("hh:mm tt");
+                    // Overtime and undertime are computed server-side on the
+                    // TIME-OUT row against that staff member's shift.
+                    entry.OvertimeMinutes = log.OvertimeMinutes;
+                    entry.UndertimeMinutes = log.UndertimeMinutes;
                 }
             }
+
+            AddNoShowDays(grouped, logs, from, to);
 
             foreach (var entry in grouped.Values)
             {
@@ -77,7 +87,11 @@ namespace Attendance_System.Views
                     DateTime.TryParse(entry.TimeOut, out var tOut))
                 {
                     var worked = tOut - tIn;
-                    entry.HoursWorked = worked.TotalHours > 0 ? $"{worked.TotalHours:0.00} hrs" : "--";
+                    // InvariantCulture: on a comma-decimal locale "8.50" would
+                    // format as "8,50" and split the CSV column in two.
+                    entry.HoursWorked = worked.TotalHours > 0
+                        ? worked.TotalHours.ToString("0.00", CultureInfo.InvariantCulture) + " hrs"
+                        : "--";
                 }
             }
 
@@ -88,6 +102,39 @@ namespace Attendance_System.Views
 
             DtrGrid.ItemsSource = _currentReport;
             BtnExport.IsEnabled = _currentReport.Count > 0;
+        }
+
+        /// <summary>
+        /// A staff member who never taps never reaches the server, so absence
+        /// from a no-show can only be derived here. For every staff member who
+        /// appears anywhere in the range, fill in the Mon–Fri days they have no
+        /// TIME-IN for. Saturday and Sunday are rest days and are skipped —
+        /// not working on a rest day is not an absence.
+        /// </summary>
+        private static void AddNoShowDays(
+            Dictionary<(string, DateTime), DtrEntry> grouped,
+            List<AttendanceRecord> logs, DateTime from, DateTime to)
+        {
+            var staffNames = logs.Select(l => l.StaffName).Distinct().ToList();
+            // Never mark today absent — the workday is still running.
+            var lastDay = to > DateTime.Today ? DateTime.Today : to;
+
+            foreach (var name in staffNames)
+            {
+                for (var day = from.Date; day < lastDay.Date.AddDays(1); day = day.AddDays(1))
+                {
+                    if (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
+                    if (day >= DateTime.Today) continue;
+                    if (grouped.ContainsKey((name, day))) continue;
+
+                    grouped[(name, day)] = new DtrEntry
+                    {
+                        StaffName = name,
+                        Date = day,
+                        IsAbsent = true,
+                    };
+                }
+            }
         }
 
         private void ExportButton_Click(object sender, RoutedEventArgs e)
@@ -108,13 +155,57 @@ namespace Attendance_System.Views
             if (dialog.ShowDialog() != true) return;
 
             var sb = new StringBuilder();
-            sb.AppendLine("Staff Name,Date,Time In,Time Out,Hours Worked,Remarks");
+            sb.AppendLine("Staff Name,Date,Time In,Time Out,Hours Worked,Overtime,Undertime,Remarks");
             foreach (var row in _currentReport)
-                sb.AppendLine($"{row.StaffName},{row.DateDisplay},{row.TimeIn},{row.TimeOut},{row.HoursWorked},{row.Remarks}");
+            {
+                sb.AppendLine(string.Join(",", new[]
+                {
+                    Csv(row.StaffName),
+                    Csv(row.DateDisplay),
+                    Csv(row.TimeIn),
+                    Csv(row.TimeOut),
+                    Csv(row.HoursWorked),
+                    Csv(row.OvertimeDisplay),
+                    Csv(row.UndertimeDisplay),
+                    Csv(row.Remarks),
+                }));
+            }
 
-            File.WriteAllText(dialog.FileName, sb.ToString());
+            try
+            {
+                // UTF-8 *with* BOM: without it Excel opens the file as the
+                // system codepage and mangles names like Muñoz.
+                File.WriteAllText(dialog.FileName, sb.ToString(), new UTF8Encoding(true));
+            }
+            catch (IOException ex)
+            {
+                // Usually the file is still open in Excel.
+                MessageBox.Show($"Couldn't write the file:\n{ex.Message}\n\n" +
+                    "If it's open in Excel, close it and export again.",
+                    "Export Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show($"Couldn't write the file:\n{ex.Message}",
+                    "Export Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             MessageBox.Show("Report exported successfully.", "Done",
                 MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Quotes a CSV field when it contains a comma, quote or line break,
+        /// doubling any embedded quotes. A name like "Santos, Jr." would
+        /// otherwise split into two columns and shift every later field.
+        /// </summary>
+        private static string Csv(string? value)
+        {
+            value ??= "";
+            if (value.IndexOfAny(new[] { ',', '"', '\n', '\r' }) < 0) return value;
+            return $"\"{value.Replace("\"", "\"\"")}\"";
         }
     }
 }

@@ -20,6 +20,11 @@
                 <TextBlock Text="Times are Philippine Standard Time." Style="{StaticResource HelpTextStyle}" Margin="0,2,0,20"/>
 
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="18"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="16"/>
@@ -28,7 +33,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
+                    <StackPanel Grid.Row="0" Grid.Column="0">
                         <TextBlock Text="Shift start" Style="{StaticResource FieldLabelStyle}"/>
                         <ComboBox x:Name="CmbShiftStart" Style="{StaticResource ModernComboBoxStyle}"
                                   DisplayMemberPath="Label" MaxDropDownHeight="280" SelectionChanged="Time_SelectionChanged"/>
@@ -36,7 +41,7 @@
                                    TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2">
+                    <StackPanel Grid.Row="0" Grid.Column="2">
                         <TextBlock Text="Late after" Style="{StaticResource FieldLabelStyle}"/>
                         <ComboBox x:Name="CmbLateCutoff" Style="{StaticResource ModernComboBoxStyle}"
                                   DisplayMemberPath="Label" MaxDropDownHeight="280" SelectionChanged="Time_SelectionChanged"/>
@@ -44,11 +49,25 @@
                                    TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="4">
+                    <StackPanel Grid.Row="0" Grid.Column="4">
                         <TextBlock Text="Absent after" Style="{StaticResource FieldLabelStyle}"/>
                         <ComboBox x:Name="CmbAbsentCutoff" Style="{StaticResource ModernComboBoxStyle}"
                                   DisplayMemberPath="Label" MaxDropDownHeight="280" SelectionChanged="Time_SelectionChanged"/>
-                        <TextBlock Text="No TIME-IN by this time counts as absent. (Not enforced yet.)"
+                        <TextBlock Text="A TIME-IN after this marks the day Absent."
+                                   Style="{StaticResource HelpTextStyle}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Grid.Column="0">
+                        <TextBlock Text="Shift end" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="CmbShiftEnd" Style="{StaticResource ModernComboBoxStyle}"
+                                  DisplayMemberPath="Label" MaxDropDownHeight="280" SelectionChanged="Time_SelectionChanged"/>
+                        <TextBlock Text="A TIME-OUT after this earns overtime; before it, undertime."
+                                   Style="{StaticResource HelpTextStyle}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" VerticalAlignment="Center">
+                        <TextBlock Text="Workdays" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBlock Text="Monday to Friday. Saturday and Sunday are rest days: late and absent are never flagged, and every hour worked counts as overtime."
                                    Style="{StaticResource HelpTextStyle}" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Grid>

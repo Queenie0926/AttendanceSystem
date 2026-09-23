@@ -9,6 +9,10 @@
         public TimeSpan Time { get; set; }
         public string Status { get; set; } = ""; // "Time In" or "Time Out"
         public bool IsLate { get; set; }
+        public bool IsAbsent { get; set; }
+        public bool IsRestDay { get; set; }
+        public int OvertimeMinutes { get; set; }
+        public int UndertimeMinutes { get; set; }
 
         public string DateDisplay => Date.ToString("MM/dd/yyyy");
         public string TimeDisplay => DateTime.Today.Add(Time).ToString("hh:mm tt");
@@ -16,7 +20,23 @@
             Date.Date == DateTime.Today ? "Today"
             : Date.Date == DateTime.Today.AddDays(-1) ? "Yesterday"
             : Date.ToString("MMM d");
-        public string StatusDisplay => IsLate ? $"{Status} (Late)" : Status;
+        // Absent outranks late: someone past the absent cutoff was also late,
+        // but the day is not credited, so that is what the admin needs to see.
+        public string StatusDisplay =>
+            IsAbsent ? $"{Status} (Absent)"
+            : IsLate ? $"{Status} (Late)"
+            : Status;
+
+        public string OvertimeDisplay => FormatMinutes(OvertimeMinutes);
+        public string UndertimeDisplay => FormatMinutes(UndertimeMinutes);
+
+        public static string FormatMinutes(int minutes)
+        {
+            if (minutes <= 0) return "--";
+            var h = minutes / 60;
+            var m = minutes % 60;
+            return h == 0 ? $"{m}m" : m == 0 ? $"{h}h" : $"{h}h {m}m";
+        }
     }
 
     public class DtrEntry
@@ -27,8 +47,21 @@
         public string TimeOut { get; set; } = "--";
         public string HoursWorked { get; set; } = "--";
         public bool IsLate { get; set; }
+        public bool IsAbsent { get; set; }
+        public bool IsRestDay { get; set; }
+        public int OvertimeMinutes { get; set; }
+        public int UndertimeMinutes { get; set; }
 
         public string DateDisplay => Date.ToString("MM/dd/yyyy");
-        public string Remarks => IsLate ? "Late" : "";
+        public string OvertimeDisplay => AttendanceRecord.FormatMinutes(OvertimeMinutes);
+        public string UndertimeDisplay => AttendanceRecord.FormatMinutes(UndertimeMinutes);
+
+        // Saturday and Sunday are rest days: no late or absent, and every
+        // hour worked is overtime.
+        public string Remarks =>
+            IsRestDay ? (OvertimeMinutes > 0 ? "Rest day (OT)" : "Rest day")
+            : IsAbsent ? "Absent"
+            : IsLate ? "Late"
+            : "";
     }
 }

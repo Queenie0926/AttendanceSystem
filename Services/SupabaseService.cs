@@ -145,6 +145,7 @@ namespace Attendance_System.Services
                 ShiftStart = shift is null ? null : ToDbTime(shift.Start),
                 LateCutoff = shift is null ? null : ToDbTime(shift.LateCutoff),
                 AbsentCutoff = shift is null ? null : ToDbTime(shift.AbsentCutoff),
+                ShiftEnd = shift is null ? null : ToDbTime(shift.ShiftEnd),
             };
 
             var response = await client.From<StaffEntity>().Insert(entity);
@@ -169,6 +170,7 @@ namespace Attendance_System.Services
                 .Set(x => x.ShiftStart!, shift is null ? null! : ToDbTime(shift.Start))
                 .Set(x => x.LateCutoff!, shift is null ? null! : ToDbTime(shift.LateCutoff))
                 .Set(x => x.AbsentCutoff!, shift is null ? null! : ToDbTime(shift.AbsentCutoff))
+                .Set(x => x.ShiftEnd!, shift is null ? null! : ToDbTime(shift.ShiftEnd))
                 .Update();
 
             return ToRecord(response.Models.FirstOrDefault()
@@ -210,8 +212,10 @@ namespace Attendance_System.Services
             Program = e.Program,
             PositionRole = e.PositionRole,
             RfidUid = e.RfidUid,
-            Shift = e.ShiftStart is not null && e.LateCutoff is not null && e.AbsentCutoff is not null
-                ? new StaffShift(TimeSpan.Parse(e.ShiftStart), TimeSpan.Parse(e.LateCutoff), TimeSpan.Parse(e.AbsentCutoff))
+            Shift = e.ShiftStart is not null && e.LateCutoff is not null
+                    && e.AbsentCutoff is not null && e.ShiftEnd is not null
+                ? new StaffShift(TimeSpan.Parse(e.ShiftStart), TimeSpan.Parse(e.LateCutoff),
+                                 TimeSpan.Parse(e.AbsentCutoff), TimeSpan.Parse(e.ShiftEnd))
                 : null,
         };
 
@@ -278,6 +282,10 @@ namespace Attendance_System.Services
                 Time = localTime.TimeOfDay,
                 Status = e.EventType == "TIME-IN" ? "Time In" : "Time Out",
                 IsLate = e.IsLate,
+                IsAbsent = e.IsAbsent,
+                IsRestDay = e.IsRestDay,
+                OvertimeMinutes = e.OvertimeMinutes,
+                UndertimeMinutes = e.UndertimeMinutes,
             };
         }
 
@@ -293,14 +301,25 @@ namespace Attendance_System.Services
             return response ?? new ShiftSettingsEntity { Id = 1 };
         }
 
-        public async Task<ShiftSettingsEntity> UpdateShiftSettingsAsync(TimeSpan shiftStart, TimeSpan lateCutoff, TimeSpan absentCutoff)
+        public async Task<ShiftSettingsEntity> UpdateShiftSettingsAsync(
+            TimeSpan shiftStart, TimeSpan lateCutoff, TimeSpan absentCutoff, TimeSpan shiftEnd)
         {
+            // Mirrors the shift_settings_order check constraint, so the user
+            // gets a readable message instead of a Postgres violation.
+            if (lateCutoff < shiftStart)
+                throw new ArgumentException("Late cutoff cannot be before the shift start.");
+            if (absentCutoff <= lateCutoff)
+                throw new ArgumentException("Absent cutoff must be after the late cutoff.");
+            if (shiftEnd <= absentCutoff)
+                throw new ArgumentException("Shift end must be after the absent cutoff.");
+
             var client = RequireClient();
             var response = await client.From<ShiftSettingsEntity>()
                 .Where(x => x.Id == 1)
                 .Set(x => x.ShiftStart, shiftStart.ToString(@"hh\:mm\:ss"))
                 .Set(x => x.LateCutoff, lateCutoff.ToString(@"hh\:mm\:ss"))
                 .Set(x => x.AbsentCutoff, absentCutoff.ToString(@"hh\:mm\:ss"))
+                .Set(x => x.ShiftEnd, shiftEnd.ToString(@"hh\:mm\:ss"))
                 .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow)
                 .Update();
 

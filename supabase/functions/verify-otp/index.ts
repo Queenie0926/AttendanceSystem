@@ -6,9 +6,15 @@
 // detection against shift_settings, and flags a possible buddy-punching
 // attempt after repeated invalid OTP verifies.
 //
-// Request:  POST { rfid_uid: string, otp: string }
+// Request:  POST { rfid_uid: string, otp: string, action?: "TIME-IN" | "TIME-OUT" }
 // Headers:  x-device-key: <DEVICE_API_KEY>
-// Response: { status: "success" | "invalid" | "expired" | "unregistered" | "error", ... }
+// Response: { status: "success" | "invalid" | "expired" | "unregistered"
+//                    | "wrong_action" | "error", ... }
+//
+// `action` is the button the staff member pressed. It never decides the event
+// type — the server derives that from the last attendance row — but when it
+// disagrees, the request is rejected with { status: "wrong_action", expected }
+// and the OTP is left unused so they can press the other button.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -31,6 +37,53 @@ function minutesSinceMidnightIn(timeZone: string): number {
   return get("hour") * 60 + get("minute");
 }
 
+// Saturday and Sunday are rest days. Monday–Friday are the only regular
+// workdays, so late and absent are never flagged on a weekend.
+function isRestDayIn(timeZone: string): boolean {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+  }).format(new Date());
+  return weekday === "Sat" || weekday === "Sun";
+}
+
+function toMinutes(hhmmss: string): number {
+  const [h, m] = hhmmss.split(":").map(Number);
+  return h * 60 + m;
+}
+
+type Shift = {
+  shift_start: string;
+  late_cutoff: string;
+  absent_cutoff: string;
+  shift_end: string;
+};
+
+// A staff member's own shift wins; otherwise the shift_settings default.
+// 0007's all-or-none constraint guarantees the override is complete.
+async function resolveShift(staffMember: {
+  shift_start: string | null;
+  late_cutoff: string | null;
+  absent_cutoff: string | null;
+  shift_end: string | null;
+}): Promise<Shift | null> {
+  if (staffMember.shift_start && staffMember.late_cutoff &&
+      staffMember.absent_cutoff && staffMember.shift_end) {
+    return {
+      shift_start: staffMember.shift_start,
+      late_cutoff: staffMember.late_cutoff,
+      absent_cutoff: staffMember.absent_cutoff,
+      shift_end: staffMember.shift_end,
+    };
+  }
+  const { data } = await supabase
+    .from("shift_settings")
+    .select("shift_start, late_cutoff, absent_cutoff, shift_end")
+    .eq("id", 1)
+    .maybeSingle();
+  return data as Shift | null;
+}
+
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -47,7 +100,7 @@ serve(async (req) => {
       return json({ status: "error", message: "Unauthorized device" }, 401);
     }
 
-    const { rfid_uid, otp } = await req.json();
+    const { rfid_uid, otp, action } = await req.json();
     if (!rfid_uid || !otp) {
       return json(
         { status: "error", message: "rfid_uid and otp required" },
@@ -57,7 +110,10 @@ serve(async (req) => {
 
     const { data: staffMember, error: staffError } = await supabase
       .from("staff")
-      .select("id, first_name, middle_name, last_name, email, late_cutoff")
+      .select(
+        "id, first_name, middle_name, last_name, email, " +
+          "shift_start, late_cutoff, absent_cutoff, shift_end",
+      )
       .eq("rfid_uid", rfid_uid)
       .maybeSingle();
     if (staffError) throw staffError;
@@ -93,12 +149,6 @@ serve(async (req) => {
       return json({ status: "invalid" });
     }
 
-    // Mark the token used so it can't be replayed.
-    await supabase.from("otp_tokens").update({ is_used: true }).eq(
-      "id",
-      token.id,
-    );
-
     // Status-integrity check: the next event type is derived from the most
     // recent row for this staff member — never decided by the ESP32.
     const { data: lastEvent } = await supabase
@@ -114,27 +164,84 @@ serve(async (req) => {
         ? "TIME-IN"
         : "TIME-OUT";
 
-    // Late detection only applies to TIME-IN.
-    let isLate = false;
-    if (nextEventType === "TIME-IN") {
-      // A staff member's own shift wins; otherwise use the default.
-      let settings: { late_cutoff: string } | null = staffMember.late_cutoff
-        ? { late_cutoff: staffMember.late_cutoff }
-        : null;
-      if (!settings) {
-        const { data } = await supabase
-          .from("shift_settings")
-          .select("late_cutoff")
-          .eq("id", 1)
-          .maybeSingle();
-        settings = data;
+    // The device tells us which button was pressed. The server still decides
+    // the event type above — this only checks the two agree, so the staff
+    // member is told they pressed the wrong one instead of silently getting
+    // the opposite event. Clients that omit `action` keep the old behaviour.
+    if (action !== undefined && action !== null && action !== "") {
+      if (action !== "TIME-IN" && action !== "TIME-OUT") {
+        return json(
+          { status: "error", message: "action must be TIME-IN or TIME-OUT" },
+          400,
+        );
       }
+      if (action !== nextEventType) {
+        // Deliberately before the token is consumed: a wrong button is a
+        // slip, so the OTP stays valid and they can press the other one.
+        await logAudit(
+          staffMember.id,
+          rfid_uid,
+          "wrong_action",
+          `pressed ${action}, expected ${nextEventType}`,
+        );
+        return json({ status: "wrong_action", expected: nextEventType });
+      }
+    }
 
-      if (settings) {
-        // shift_settings times are Philippine wall-clock times, but the edge
-        // runtime's clock is UTC — compare in the school's timezone.
-        const [lh, lm] = settings.late_cutoff.split(":").map(Number);
-        isLate = minutesSinceMidnightIn(SCHOOL_TIMEZONE) > lh * 60 + lm;
+    // Mark the token used so it can't be replayed.
+    await supabase.from("otp_tokens").update({ is_used: true }).eq(
+      "id",
+      token.id,
+    );
+
+    // shift_settings times are Philippine wall-clock times, but the edge
+    // runtime's clock is UTC — every comparison happens in the school's
+    // timezone, never the runtime's.
+    const nowMinutes = minutesSinceMidnightIn(SCHOOL_TIMEZONE);
+    const isRestDay = isRestDayIn(SCHOOL_TIMEZONE);
+    const shift = await resolveShift(staffMember);
+
+    let isLate = false;
+    let isAbsent = false;
+    let overtimeMinutes = 0;
+    let undertimeMinutes = 0;
+
+    if (nextEventType === "TIME-IN") {
+      // Rest days have no shift to be late for, so neither flag applies.
+      if (shift && !isRestDay) {
+        isLate = nowMinutes > toMinutes(shift.late_cutoff);
+        // Past the absent cutoff the day is not credited, but the TIME-IN is
+        // still recorded — they are physically here and must be able to
+        // time out.
+        isAbsent = nowMinutes > toMinutes(shift.absent_cutoff);
+      }
+    } else if (shift) {
+      // TIME-OUT: measure the day against the shift. lastEvent is the
+      // matching TIME-IN, so re-read it for its timestamp.
+      const { data: timeIn } = await supabase
+        .from("attendance_events")
+        .select("event_timestamp, is_rest_day")
+        .eq("staff_id", staffMember.id)
+        .eq("event_type", "TIME-IN")
+        .order("event_timestamp", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (isRestDay || timeIn?.is_rest_day) {
+        // Rest-day work is entirely overtime — there is no shift to fall
+        // short of, so undertime stays 0.
+        if (timeIn) {
+          const workedMs = Date.now() -
+            new Date(timeIn.event_timestamp).getTime();
+          overtimeMinutes = Math.max(0, Math.round(workedMs / 60000));
+        }
+      } else {
+        const shiftEnd = toMinutes(shift.shift_end);
+        if (nowMinutes > shiftEnd) {
+          overtimeMinutes = nowMinutes - shiftEnd;
+        } else {
+          undertimeMinutes = shiftEnd - nowMinutes;
+        }
       }
     }
 
@@ -144,6 +251,10 @@ serve(async (req) => {
         staff_id: staffMember.id,
         event_type: nextEventType,
         is_late: isLate,
+        is_absent: isAbsent,
+        is_rest_day: isRestDay,
+        overtime_minutes: overtimeMinutes,
+        undertime_minutes: undertimeMinutes,
       });
     if (insertError) throw insertError;
 
@@ -154,6 +265,10 @@ serve(async (req) => {
       event_type: nextEventType,
       staff_name: formatFullName(staffMember),
       is_late: isLate,
+      is_absent: isAbsent,
+      is_rest_day: isRestDay,
+      overtime_minutes: overtimeMinutes,
+      undertime_minutes: undertimeMinutes,
     });
   } catch (err) {
     console.error(err);
@@ -192,7 +307,7 @@ async function flagIfTooManyFailures(staffId: string, rfidUid: string) {
 async function logAudit(
   staffId: string | null,
   rfidUid: string,
-  result: "success" | "invalid" | "expired" | "unregistered",
+  result: "success" | "invalid" | "expired" | "unregistered" | "wrong_action",
   detail?: string,
 ) {
   await supabase.from("otp_audit_log").insert({

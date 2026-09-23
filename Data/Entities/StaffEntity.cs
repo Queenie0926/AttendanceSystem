@@ -43,6 +43,9 @@ namespace Attendance_System.Data.Entities
         [Column("absent_cutoff")]
         public string? AbsentCutoff { get; set; }
 
+        [Column("shift_end")]
+        public string? ShiftEnd { get; set; }
+
         [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
         public DateTimeOffset CreatedAt { get; set; }
     }

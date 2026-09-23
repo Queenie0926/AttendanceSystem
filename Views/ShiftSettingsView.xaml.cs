@@ -20,7 +20,7 @@ namespace Attendance_System.Views
             Enumerable.Range(0, 24 * 4).Select(i => new TimeOption(TimeSpan.FromMinutes(i * 15))).ToList();
 
         // Last values loaded from / saved to Supabase — used for dirty tracking and Discard.
-        private (TimeSpan Start, TimeSpan Late, TimeSpan Absent) _saved;
+        private (TimeSpan Start, TimeSpan Late, TimeSpan Absent, TimeSpan End) _saved;
         private bool _loading;
 
         public ShiftSettingsView()
@@ -29,6 +29,7 @@ namespace Attendance_System.Views
             CmbShiftStart.ItemsSource = _options;
             CmbLateCutoff.ItemsSource = _options;
             CmbAbsentCutoff.ItemsSource = _options;
+            CmbShiftEnd.ItemsSource = _options;
             Loaded += async (s, e) => await LoadAsync();
         }
 
@@ -38,7 +39,8 @@ namespace Attendance_System.Views
             try
             {
                 var settings = await SupabaseService.Instance.GetShiftSettingsAsync();
-                _saved = (ParseTime(settings.ShiftStart), ParseTime(settings.LateCutoff), ParseTime(settings.AbsentCutoff));
+                _saved = (ParseTime(settings.ShiftStart), ParseTime(settings.LateCutoff),
+                          ParseTime(settings.AbsentCutoff), ParseTime(settings.ShiftEnd));
                 ApplyToForm(_saved);
                 SetStatus(settings.UpdatedAt == default ? "" : $"Last saved {settings.UpdatedAt.LocalDateTime:MMM d, yyyy h:mm tt}", StatusKind.Info);
             }
@@ -48,12 +50,13 @@ namespace Attendance_System.Views
             }
         }
 
-        private void ApplyToForm((TimeSpan Start, TimeSpan Late, TimeSpan Absent) values)
+        private void ApplyToForm((TimeSpan Start, TimeSpan Late, TimeSpan Absent, TimeSpan End) values)
         {
             _loading = true;
             CmbShiftStart.SelectedItem = OptionFor(values.Start);
             CmbLateCutoff.SelectedItem = OptionFor(values.Late);
             CmbAbsentCutoff.SelectedItem = OptionFor(values.Absent);
+            CmbShiftEnd.SelectedItem = OptionFor(values.End);
             _loading = false;
             RefreshState();
         }
@@ -69,6 +72,7 @@ namespace Attendance_System.Views
             CmbShiftStart.Items.Refresh();
             CmbLateCutoff.Items.Refresh();
             CmbAbsentCutoff.Items.Refresh();
+            CmbShiftEnd.Items.Refresh();
             return match;
         }
 
@@ -77,19 +81,21 @@ namespace Attendance_System.Views
             if (!_loading) RefreshState();
         }
 
-        private (TimeSpan Start, TimeSpan Late, TimeSpan Absent)? CurrentValues()
+        private (TimeSpan Start, TimeSpan Late, TimeSpan Absent, TimeSpan End)? CurrentValues()
         {
             if (CmbShiftStart.SelectedItem is TimeOption s &&
                 CmbLateCutoff.SelectedItem is TimeOption l &&
-                CmbAbsentCutoff.SelectedItem is TimeOption a)
-                return (s.Value, l.Value, a.Value);
+                CmbAbsentCutoff.SelectedItem is TimeOption a &&
+                CmbShiftEnd.SelectedItem is TimeOption e)
+                return (s.Value, l.Value, a.Value, e.Value);
             return null;
         }
 
-        private string? Validate((TimeSpan Start, TimeSpan Late, TimeSpan Absent) v)
+        private string? Validate((TimeSpan Start, TimeSpan Late, TimeSpan Absent, TimeSpan End) v)
         {
             if (v.Late < v.Start) return "\"Late after\" can't be earlier than the shift start.";
             if (v.Absent <= v.Late) return "\"Absent after\" must be later than \"Late after\".";
+            if (v.End <= v.Absent) return "\"Shift end\" must be later than \"Absent after\".";
             return null;
         }
 
@@ -106,8 +112,9 @@ namespace Attendance_System.Views
             var error = Validate(v);
             bool dirty = v != _saved;
 
-            TxtSummary.Text = error ?? $"Shift starts at {Fmt(v.Start)}. A TIME-IN after {Fmt(v.Late)} is marked Late, " +
-                                       $"and anyone without a TIME-IN by {Fmt(v.Absent)} counts as absent.";
+            TxtSummary.Text = error ?? $"Mon-Fri, {Fmt(v.Start)} to {Fmt(v.End)}. A TIME-IN after {Fmt(v.Late)} is marked Late, " +
+                                       $"and after {Fmt(v.Absent)} the day counts as Absent. A TIME-OUT past {Fmt(v.End)} earns " +
+                                       $"overtime; earlier is undertime. Sat and Sun are rest days - all hours are overtime.";
             TxtSummary.Foreground = (Brush)FindResource(error is null ? "TextPrimaryBrush" : "DangerBrush");
 
             BtnSave.IsEnabled = dirty && error is null;
@@ -125,7 +132,7 @@ namespace Attendance_System.Views
 
             try
             {
-                var saved = await SupabaseService.Instance.UpdateShiftSettingsAsync(v.Start, v.Late, v.Absent);
+                var saved = await SupabaseService.Instance.UpdateShiftSettingsAsync(v.Start, v.Late, v.Absent, v.End);
                 _saved = v;
                 RefreshState();
                 SetStatus($"Saved. New taps use these times from now on ({saved.UpdatedAt.LocalDateTime:h:mm tt}).", StatusKind.Success);

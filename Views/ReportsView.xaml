@@ -75,13 +75,13 @@
                         <DataGridTextColumn Header="TIME IN" Binding="{Binding TimeIn}" Width="1*"/>
                         <DataGridTextColumn Header="TIME OUT" Binding="{Binding TimeOut}" Width="1*"/>
                         <DataGridTextColumn Header="HOURS" Binding="{Binding HoursWorked}" Width="1*"/>
+                        <DataGridTextColumn Header="OT" Binding="{Binding OvertimeDisplay}" Width="0.8*"/>
+                        <DataGridTextColumn Header="UT" Binding="{Binding UndertimeDisplay}" Width="0.8*"/>
                         <DataGridTemplateColumn Header="REMARKS" Width="1*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border Style="{StaticResource BadgeStyle}" Background="{StaticResource WarnSoftBrush}"
-                                            Visibility="{Binding IsLate, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock Text="Late" Style="{StaticResource BadgeTextStyle}" Foreground="{StaticResource WarnBrush}"/>
-                                    </Border>
+                                    <TextBlock Text="{Binding Remarks}" Style="{StaticResource BadgeTextStyle}"
+                                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

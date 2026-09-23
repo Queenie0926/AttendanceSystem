@@ -1,6 +1,6 @@
 ﻿namespace Attendance_System.Models
 {
-    public record StaffShift(TimeSpan Start, TimeSpan LateCutoff, TimeSpan AbsentCutoff);
+    public record StaffShift(TimeSpan Start, TimeSpan LateCutoff, TimeSpan AbsentCutoff, TimeSpan ShiftEnd);
 
     public class StaffRecord
     {

@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 # Local secrets (Supabase URL/keys) — copy appsettings.example.json instead
 appsettings.json
+# Arduino firmware secrets
+firmware/**/arduino_secrets.h
