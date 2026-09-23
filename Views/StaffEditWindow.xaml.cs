@@ -161,7 +161,7 @@ namespace Attendance_System.Views
             string firstName = TxtFirstName.Text.Trim();
             string lastName = TxtLastName.Text.Trim();
             string email = TxtEmail.Text.Trim();
-            string uid = TxtRfidUid.Text.Trim();
+            string uid = TxtRfidUid.Text.Trim().ToUpper();
             var department = CmbDepartment.SelectedItem as string;
             var program = CmbProgram.SelectedItem as string;
             var position = CmbPosition.SelectedItem as string;

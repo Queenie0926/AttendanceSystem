@@ -61,7 +61,7 @@ namespace Attendance_System.Views
             if (CmbProgramFilter.SelectedItem is string program && program != AllPrograms && s.Program != program)
                 return false;
 
-            string q = TxtSearch.Text.Trim();
+            string q = TxtSearch.Text.Trim().ToUpper();
             return q.Length == 0
                 || s.FullName.Contains(q, StringComparison.OrdinalIgnoreCase)
                 || s.Email.Contains(q, StringComparison.OrdinalIgnoreCase)
