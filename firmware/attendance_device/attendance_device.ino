@@ -10,9 +10,8 @@
  *   Time-In GPIO34, Time-Out GPIO35 (input-only: external 10k pull-down required)
  *   DFPlayer Mini: VCC->5V, GND->GND (common with ESP32 GND),
  *                  DFPlayer RX <- 1k resistor <- ESP32 GPIO4  (ESP32 TX)
- *                  DFPlayer TX -> NOT CONNECTED (one-way control)
+ *                  DFPlayer TX -> ESP32 GPIO36 / VP        (ESP32 RX)
  *                  SPK_1 / SPK_2 -> speaker (or DAC_R/DAC_L -> amplifier)
- *                  GPIO36 is now unused and free.
  *
  * Wi-Fi is required: the OTP send/verify calls go to Supabase Edge Functions.
  */
@@ -59,21 +58,21 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // --- DS3231 RTC (I2C, shares bus with OLED) ---
 RTC_DS3231 rtc;
 
-// --- DFPlayer Mini (UART2, one-way: commands only) ---
-// Only the ESP32 -> DFPlayer direction is wired. The module's TX is left
-// unconnected, so GPIO36 is free: it is input-only with no internal pull-up,
-// which made it a poor UART RX pin (see the gpio_pullup_en error it caused).
-// Nothing is lost - clip timing comes from VOICE_MS[] below, not from the
-// module reporting back.
+// --- DFPlayer Mini (UART2, two-way) ---
+// GPIO36 is input-only with no internal pull-up, so the core logs a
+// harmless "gpio_pullup_en ... GPIO number error" at boot. The DFPlayer
+// drives its TX line itself, so no pull-up is needed and RX works fine.
 #define DFPLAYER_TX_PIN 4    // ESP32 transmits here -> DFPlayer RX (via 1k)
-#define DFPLAYER_RX_PIN -1   // not wired; UART2 receive is disabled
-#define DFPLAYER_VOLUME 25   // 0..30
+#define DFPLAYER_RX_PIN 36   // DFPlayer TX -> ESP32 receives here
+#define DFPLAYER_VOLUME 30   // 0..30
 DFRobotDFPlayerMini dfplayer;
 bool audioReady = false;
+bool useRootOrder = false;         // set when /mp3/000N.mp3 is not found
+uint8_t lastClip = 0;              // replayed once after switching to root order
 unsigned long voiceStartedAt = 0;  // millis() when the current clip started
 uint16_t voiceLenMs = 0;           // length of the current clip, 0 if none
 
-// Voice clips on the SD card root: 0001.mp3 ... 0007.mp3
+// Voice clips on the SD card in a folder named "mp3": /mp3/0001.mp3 ... /mp3/0007.mp3
 enum VoiceClip {
   VOICE_NONE          = 0,
   VOICE_CARD_DETECTED = 1,  // "Card detected, please enter OTP"
@@ -213,22 +212,29 @@ void setup() {
 void initAudio() {
   Serial2.begin(9600, SERIAL_8N1, DFPLAYER_RX_PIN, DFPLAYER_TX_PIN);
 
-  // The module needs ~1.5s after power-on before it accepts commands. With
-  // no return line we cannot ask whether it is ready, so we wait it out.
+  // The module needs ~1.5s after power-on before it accepts commands.
   delay(1500);
 
-  // isACK = false: the library would otherwise block waiting for replies
-  // that can never arrive. doReset = false for the same reason - a reset
-  // is only confirmed by a response.
-  audioReady = dfplayer.begin(Serial2, /*isACK=*/false, /*doReset=*/false);
+  // isACK = true: every command waits for the module to confirm it.
+  // doReset = true: reset and wait for the "card online" report, so a
+  // true result means the module is alive AND sees the SD card.
+  audioReady = dfplayer.begin(Serial2, /*isACK=*/true, /*doReset=*/true);
 
   if (audioReady) {
+    dfplayer.setTimeOut(500);
+    dfplayer.outputDevice(DFPLAYER_DEVICE_SD);
     dfplayer.volume(DFPLAYER_VOLUME);
-    // One-way link: this says the command was SENT, not that a module heard
-    // it. Silence with this line present means wiring, SD card or power.
-    Serial.println(F("DFPlayer Mini configured (one-way, no reply expected)."));
+    delay(100);
+    // -1 here means the module did not answer that query (some clones don't).
+    Serial.printf("DFPlayer online. Volume=%d, files on SD=%d\n",
+                  dfplayer.readVolume(), dfplayer.readFileCounts());
+    // Boot check: if this is heard but the prompts later are not, WiFi is
+    // pulling the supply down while it transmits.
+    playVoice(VOICE_CARD_DETECTED);
   } else {
-    Serial.println(F("DFPlayer serial init failed."));
+    Serial.println(F("DFPlayer NOT responding. Check: DFPlayer TX -> GPIO36, "
+                     "RX <- 1k <- GPIO4, common GND, SD card inserted."));
+    printAudioStatus(); // shows the module's own error, if it sent one
   }
 }
 
@@ -237,8 +243,21 @@ void initAudio() {
 void playVoice(uint8_t clip) {
   voiceStartedAt = millis();
   voiceLenMs = 0;
-  if (!audioReady || clip == VOICE_NONE) return;
-  dfplayer.play(clip); // plays 000<clip>.mp3 from the SD card root
+  if (clip == VOICE_NONE) return;
+  if (!audioReady) {
+    Serial.printf("[AUDIO] skipped clip %u - DFPlayer not ready\n", clip);
+    return;
+  }
+  lastClip = clip;
+  if (useRootOrder) {
+    // Fallback: the Nth file on the card, in the order files were copied.
+    Serial.printf("[AUDIO] play file #%u (root order)\n", clip);
+    dfplayer.play(clip);
+  } else {
+    // Plays /mp3/000<clip>.mp3 by file NAME.
+    Serial.printf("[AUDIO] play /mp3/%04u.mp3\n", clip);
+    dfplayer.playMp3Folder(clip);
+  }
   if (clip < sizeof(VOICE_MS) / sizeof(VOICE_MS[0])) voiceLenMs = VOICE_MS[clip];
 }
 
@@ -312,7 +331,47 @@ void syncRtcFromNtp() {
 }
 
 // ---------- MAIN LOOP ----------
+// Prints anything the DFPlayer reported: finished clips, SD card errors,
+// missing files, resets (a reset mid-use usually means a power dip).
+void printAudioStatus() {
+  if (!dfplayer.available()) return;
+  uint8_t type = dfplayer.readType();
+  int value = dfplayer.read();
+  switch (type) {
+    case TimeOut:            Serial.println(F("[AUDIO] no reply (timeout)")); break;
+    case WrongStack:         Serial.println(F("[AUDIO] garbled reply")); break;
+    case DFPlayerCardInserted: Serial.println(F("[AUDIO] SD card inserted")); break;
+    case DFPlayerCardRemoved:  Serial.println(F("[AUDIO] SD card REMOVED")); break;
+    case DFPlayerCardOnline:   Serial.println(F("[AUDIO] SD card online")); break;
+    case DFPlayerPlayFinished: Serial.printf("[AUDIO] finished clip %d\n", value); break;
+    case DFPlayerError:
+      Serial.print(F("[AUDIO] ERROR: "));
+      switch (value) {
+        case Busy:             Serial.println(F("card not found / busy")); break;
+        case Sleeping:         Serial.println(F("sleeping")); break;
+        case SerialWrongStack: Serial.println(F("bad serial frame")); break;
+        case CheckSumNotMatch: Serial.println(F("checksum mismatch")); break;
+        case FileIndexOut:     Serial.println(F("file number out of range")); break;
+        case FileMismatch:
+          Serial.println(F("file not found"));
+          // No /mp3/000N.mp3 on this card: switch to copy-order playback
+          // for the rest of this session and retry the clip that failed.
+          if (!useRootOrder) {
+            useRootOrder = true;
+            Serial.println(F("[AUDIO] /mp3 folder not usable - falling back to root order"));
+            if (lastClip != VOICE_NONE) playVoice(lastClip);
+          }
+          break;
+        case Advertise:        Serial.println(F("in advertise")); break;
+        default:               Serial.printf("code %d\n", value); break;
+      }
+      break;
+    default: Serial.printf("[AUDIO] message type %u value %d\n", type, value); break;
+  }
+}
+
 void loop() {
+  if (audioReady) printAudioStatus();
   switch (state) {
     case STATE_IDLE:            handleIdle(); break;
     case STATE_AWAITING_OTP:    handleAwaitingOtp(); break;
@@ -376,6 +435,7 @@ void handleAwaitingOtp() {
 
   char key = keypad.getKey();
   if (!key) return;
+  beep(1, 40); // short click so every key press is confirmed
 
   if (key == '*') {
     showMessage("Cancelled.", "Tap your ID.");
