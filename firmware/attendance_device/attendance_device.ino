@@ -228,9 +228,6 @@ void initAudio() {
     // -1 here means the module did not answer that query (some clones don't).
     Serial.printf("DFPlayer online. Volume=%d, files on SD=%d\n",
                   dfplayer.readVolume(), dfplayer.readFileCounts());
-    // Boot check: if this is heard but the prompts later are not, WiFi is
-    // pulling the supply down while it transmits.
-    playVoice(VOICE_CARD_DETECTED);
   } else {
     Serial.println(F("DFPlayer NOT responding. Check: DFPlayer TX -> GPIO36, "
                      "RX <- 1k <- GPIO4, common GND, SD card inserted."));
